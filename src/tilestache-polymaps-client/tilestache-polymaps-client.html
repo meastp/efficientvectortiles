@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+    <title>vector sample</title>
+    <meta charset="utf-8" />
+    
+    
+    <script src="polymaps/polymaps.min.js"></script>
+    
+    <script src="jquery.min.js"></script>
+    <script type="text/javascript">
+    $(document).ready(function() {
+        
+        
+        var po = org.polymaps;
+        
+        var map = po.map()
+        .container(document.getElementById("map").appendChild(po.svg("svg")))
+//        .center({lat: 10.4851, lon: 52.9228})
+//        .zoomRange([3, 7])
+        .zoom(10)
+        .add(po.interact());
+        
+        //map.add(po.geoJson().url("http://localhost:9090/vectortiles/{Z}/{X}/{Y}.json"))
+        
+        map.add(po.image()
+    .url(po.url("http://{S}tile.cloudmade.com"
+    + "/1a1b06b230af4efdbb989ea99e9841af" // http://cloudmade.com/register
+    + "/20760/256/{Z}/{X}/{Y}.png")
+    .hosts(["a.", "b.", "c.", ""])));
+        
+        map.container().setAttribute("class", "Blues");
+    });
+    </script>
+    
+</head>
+
+<body>
+    <div id="map" style="height: 600px;width: 800px;"></div>
+</body>
+
+</html>

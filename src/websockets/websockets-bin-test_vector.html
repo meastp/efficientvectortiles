@@ -1,0 +1,354 @@
+<!doctype html>
+<html>
+<head>
+    <title>Web Sockets sample</title>
+    <meta charset="utf-8" />
+
+    <script src="jquery.min.js"></script>
+    <script type="text/javascript" src="https://raw.github.com/mbostock/d3/master/d3.v2.min.js"></script>
+    <!-- Script that sends create marker commands through a web socket -->
+    
+    <style type="text/css">
+    
+svg {
+  background: #fff;
+  border: 2px solid black;
+  margin: 20px;
+}
+
+#states path {
+  fill: red;
+  stroke: #000;
+  stroke-width: 1px;
+}
+
+#zoomin, #zoomout {
+    clear: both;
+    background: red;
+    margin: 5px;
+    float: left;
+    padding: 5px 10px;
+}
+
+#zoom {
+    float: left;
+    background: blue;
+    margin-left: 10px;
+}
+
+#up, #down, #left, #right {
+    background: yellow;
+    margin: 5px;
+    float: left;
+    padding: 5px 10px;
+}
+
+#up, #down {
+    clear: both;
+    margin: 0px 30px;
+}
+
+#left { clear: left; }
+#right { clear: right; }
+
+#pan {
+    float: left;
+    background: blue;
+}
+
+    </style>
+    
+    <script type="text/javascript">
+    
+    $(document).ready(function() {
+        
+        var minx = 583000,  maxx = 584000,
+            miny = 6644000, maxy = 6645000;
+        
+        var bounding_box = new Float64Array(4);
+        bounding_box[0] = minx;
+        bounding_box[1] = maxx;
+        bounding_box[2] = miny;
+        bounding_box[3] = maxy;
+        
+        
+        var width = 1200, heigth = 650;
+        
+        var compx = d3.scale.linear().domain([minx, maxx]).range([0, width]);
+        
+        var compy = d3.scale.linear().domain([miny, maxy]).range([heigth, 0]);
+        
+        var path = d3.svg.line()
+                            .x(function(d){return compx(d[0]);})
+                            .y(function(d){return compy(d[1]);});
+        
+        var svg = d3.select("#map").append("svg").attr("width", width).attr("height",heigth);
+        
+        var states = svg.append("g")
+                        .attr("id", "states");
+        
+        var websocket_testserver_uri = "ws://localhost:9090";
+        
+        var websocket = new WebSocket(websocket_testserver_uri);
+        websocket.binaryType = "arraybuffer";
+        
+        websocket.onopen = function(evt) { console.log("Connected to "+websocket_testserver_uri); }
+        websocket.onclose = function(evt) { console.log("Disconnected from "+websocket_testserver_uri); }
+        websocket.onerror = function(evt) { console.log("Error from "+websocket_testserver_uri+" : "+evt.data); }
+        
+        websocket.onmessage = function(evt)
+        {
+            console.log(evt);
+            
+            var raw_data = evt.data;
+            
+            
+            var header = new Uint32Array(raw_data,0,4);
+            var size = header[0];
+            //console.log(header);
+            
+            var header_offset = 0,
+                header_byte_size = 8,
+                header_length = 2,
+                tile_header_offset = header_byte_size*header_length,
+                tile_header_byte_size = 8,
+                tile_header_length = 3*size,
+                geometry_header_offset = tile_header_offset+(tile_header_byte_size*tile_header_length);
+            
+            
+            var tile_header = new Float64Array(raw_data, tile_header_offset, tile_header_length);
+            //console.log(tile_header);
+            
+            
+            var geometry_header_byte_size = 2,
+                geometry_header_length = d3.sum(tile_header, function(obj){ 
+                                                                    if (obj < 1000) 
+                                                                     { return obj; } 
+                                                                    else { return null; }
+                                                                    } 
+                                                                );
+            //console.log(geometry_header_length);
+            
+            var geometry_header = new Uint16Array(raw_data, geometry_header_offset, geometry_header_length);
+            //console.log(geometry_header);
+            
+            var data = new Uint8Array(raw_data,geometry_header_offset+(geometry_header_byte_size*geometry_header_length));
+            //console.log(data)
+            
+            var formatted_data = new Array(size);
+            
+            var tile_offset=0;
+            var data_offset=0;
+            for(var i=0;i<size;i++)
+            {
+                var tile_elements = tile_header[i*3];
+                var origox = tile_header[i*3+1];
+                var origoy = tile_header[i*3+2];
+                
+                //console.log(tile_elements); // number of geometries in the geometrycollection/tile
+                //console.log(origox);
+                //console.log(origoy);
+                
+                formatted_data[i] = new Array(tile_elements);
+                
+                var geometry_elements = geometry_header.subarray(tile_offset, tile_offset+tile_elements); // coordinates in the geometry
+                
+                
+                for(var j=0;j<geometry_elements.length;j++)
+                {
+                    formatted_data[i][j] = new Array(geometry_elements[j]);
+                    
+                    for(var k=0;k<geometry_elements[j];k++)
+                    {
+                        formatted_data[i][j][k] = [ origox+data[data_offset], origoy+data[data_offset+1] ];
+                        data_offset += 2;
+                    }
+                    
+                    
+                    
+                }
+                
+                
+                
+                tile_offset += tile_elements;
+            }
+            
+            
+            
+            
+            
+            //console.log(formatted_data);
+            
+            
+            //////
+            /*
+            formatted_data = new Array(size);
+            
+            
+            for(var i=0,offset = 0;i<size;i++)
+            {
+                
+                var nelements = sub_header[i*4];
+                
+                formatted_data[i] = new Array(nelements);
+                
+                for(var j=0; j<nelements;j++)
+                {
+                    formatted_data[i][j] = data.subarray(offset+j*2, (offset+j*2)+2);
+                }
+                
+                offset += nelements*2;
+                
+            }
+            */
+            //console.log(formatted_data)
+            
+            console.log("finished processing");
+            
+            
+        compx = d3.scale.linear().domain([minx, maxx]).range([0, width]);
+        
+        compy = d3.scale.linear().domain([miny, maxy]).range([heigth, 0]);
+            
+            
+            states.selectAll("path").remove();
+            
+            var flat_array = new Array();
+            for(var i = 0;i<formatted_data.length;i++)
+            {
+                for(var j=0;j<formatted_data[i].length;j++)
+                {
+                    flat_array.push(formatted_data[i][j]);
+                }
+            }
+                
+                    states.selectAll("path")
+                      .data(flat_array)
+                      .enter().append("path")
+                      .attr("d", path);
+            
+            
+            
+            
+            
+            
+            states.selectAll("path")
+                .on("mouseover", function(g, i){d3.select(this).style("stroke", "rgb(255, 0, 0)").style("stroke-width", "2px");})
+                .on("mouseout", function(g, i){d3.select(this).style("stroke", "rgb(0, 0, 0)").style("stroke-width", "1px");});
+            
+            console.log("finished visualizing");
+            
+            
+            
+            
+            console.log("Tiles: "+size+" Features: "+geometry_header.length+" Coordinates: "+data.length+" Size: "+(raw_data.byteLength)/1000.0+"KB");
+        }
+        
+        $('#map').click(function(event){websocket.send(bounding_box.buffer)});
+        
+        $('#up').click(function(event)
+            {
+                //minx = 100;
+                //maxx = 100;
+                miny += 100;
+                maxy += 100;        
+                
+                bounding_box[0] = minx;
+                bounding_box[1] = maxx;
+                bounding_box[2] = miny;
+                bounding_box[3] = maxy;
+                
+                websocket.send(bounding_box.buffer);
+            });
+        $('#left').click(function(event)
+            {
+                minx -= 100;
+                maxx -= 100;
+                //miny = 100;
+                //maxy = 100;        
+                
+                bounding_box[0] = minx;
+                bounding_box[1] = maxx;
+                bounding_box[2] = miny;
+                bounding_box[3] = maxy;
+                
+                websocket.send(bounding_box.buffer);
+            });
+        $('#right').click(function(event)
+            {
+                minx += 100;
+                maxx += 100;
+                //miny = 100;
+                //maxy = 100;        
+                
+                bounding_box[0] = minx;
+                bounding_box[1] = maxx;
+                bounding_box[2] = miny;
+                bounding_box[3] = maxy;
+                
+                websocket.send(bounding_box.buffer);
+            });
+        $('#down').click(function(event)
+            {
+                //minx = 100;
+                //maxx = 100;
+                miny -= 100;
+                maxy -= 100;        
+                
+                bounding_box[0] = minx;
+                bounding_box[1] = maxx;
+                bounding_box[2] = miny;
+                bounding_box[3] = maxy;
+                
+                websocket.send(bounding_box.buffer);
+            });
+        $('#zoomin').click(function(event)
+            {
+                minx += 100;
+                maxx -= 100;
+                miny += 100;
+                maxy -= 100;        
+                
+                bounding_box[0] = minx;
+                bounding_box[1] = maxx;
+                bounding_box[2] = miny;
+                bounding_box[3] = maxy;
+                
+                websocket.send(bounding_box.buffer);
+            });
+        $('#zoomout').click(function(event)
+            {
+                minx -= 100;
+                maxx += 100;
+                miny -= 100;
+                maxy += 100;        
+                
+                bounding_box[0] = minx;
+                bounding_box[1] = maxx;
+                bounding_box[2] = miny;
+                bounding_box[3] = maxy;
+                
+                websocket.send(bounding_box.buffer);
+            });
+    });
+    
+    </script>
+</head>
+
+<body>
+    <div id="ctrl">
+        <div id="pan">
+            <div id="up">↑</div>
+            <div id="left">←</div>
+            <div id="right">→</div>
+            <div id="down">↓</div>
+        </div>
+        <div id="zoom">
+            <div id="zoomin">+</div>
+            <div id="zoomout">-</div>
+        </div>
+    </div>
+    <div id="map"></div>
+</body>
+
+</html>

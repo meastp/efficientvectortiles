@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <title>Request/response time for Web Sockets</title>
+        
+        <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="excanvas.min.js"></script><![endif]-->
+
+        <script type="text/javascript" src="flot/jquery.min.js"></script>
+        <script type="text/javascript" src="flot/jquery.flot.min.js"></script>
+        <script type="text/javascript" src="flot/jquery.flot.stack.min.js"></script>
+        <script type="text/javascript" src="jstat/jstat.js"></script>
+        
+        <script type="text/javascript" src="data/data.js"></script>
+        <script type="text/javascript" src="collect_data.js"></script>
+        <script type="text/javascript" src="process_data.js"></script>
+        <script type="text/javascript" src="draw_charts.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function() {
+                
+                ptest.results = COLLECTED_DATA["results"];
+                console.log(ptest);
+                
+                
+                var color = new Object();
+                
+                color.red = "#CC0000";
+                color.red2 = "#FF850A";
+                
+                color.blue = "#1A1AFF";
+                color.blue2 = "#6699CC";
+                
+                color.green = "#006600";
+                color.green2 = "#33FF33";
+                
+                color.purple = "#800080";
+                color.purple2 = "#FF33FF";
+                
+                color.black = "#000000";
+                
+                color.background = "#85AB8F";
+                
+                
+function getValuesMatrix(array, number_of_features, tolerance)
+{
+    var data = new Array();
+
+    for(var i=0;i<array.length;i++)
+    {
+        if( (array[i][3] > number_of_features-tolerance) && (array[i][3] < number_of_features+tolerance) )
+        {
+            data.push(array[i]);
+        }
+    }
+
+    return jStat( data );
+}
+
+function getMedianMatrixX(matrix)
+{
+    var query_time_array = matrix.col(0);
+    var server_processing_time_array = matrix.col(1);
+    var client_processing_time_array = matrix.col(2);
+    
+    query_time_array = query_time_array.sort(function(a, b) { return (a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0)); });
+    server_processing_time_array = server_processing_time_array.sort(function(a, b) { return (a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0)); });
+    client_processing_time_array = client_processing_time_array.sort(function(a, b) { return (a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0)); });
+    
+    query_time_array = getMedianMatrix(query_time_array, 0.80);
+    server_processing_time_array = getMedianMatrix(server_processing_time_array, 0.80);
+    client_processing_time_array = getMedianMatrix(client_processing_time_array, 0.80);
+
+    //console.log($.map(query_time_array, function(n){return n;}));
+    //console.log($.map(server_processing_time_array, function(n){return n;}));
+    //console.log($.map(client_processing_time_array, function(n){return n;}));
+    
+    return { feature : matrix.col(3).mean()[0], query : query_time_array.mean()[0], server : server_processing_time_array.mean()[0], client : client_processing_time_array.mean()[0] };
+}
+
+function getMedianMatrix(matrix, mean_tolerance)
+{
+    var array = matrix.toArray();
+    var mean = matrix.mean();
+    
+    var narray = array.slice(0, array.length-1);
+    var nmatrix = jStat(narray);
+    var nmean = nmatrix.mean();
+    
+    //console.log(array.length);
+    
+    while((nmean/mean<mean_tolerance))
+    {
+        matrix = nmatrix;
+        array = narray;
+        mean = nmean;
+        
+        narray = array.slice(0, array.length-1);
+        nmatrix = jStat(narray);
+        nmean = nmatrix.mean();
+        
+//        console.log("forhold" + nmean/mean);
+//        console.log("now" + mean);
+//        console.log("next" + nmean);
+//        console.log(array);
+//        console.log(array.length);
+    }
+    
+    narray = array.slice(1, array.length);
+    nmatrix = jStat(narray);
+    nmean = nmatrix.mean();
+    
+    while((nmean/mean<0.80))
+    {
+        matrix = nmatrix;
+        array = narray;
+        mean = nmean;
+        
+        narray = array.slice(1, array.length);
+        nmatrix = jStat(narray);
+        nmean = nmatrix.mean();
+        
+//        console.log("forhold" + nmean/mean);
+//        console.log("now" + mean);
+//        console.log("next" + nmean);
+//        console.log(array);
+//        console.log(array.length);
+    }
+    
+    //console.log(array);
+    
+    
+    return matrix;
+    
+}
+
+
+                
+                var data = ptest.extractFeaturesLatencies();
+                
+                var dbtables = ["VEGTABLE"];
+                
+                var range = jStat(150,500,3).toArray();
+                
+                var tolerance = 250;
+                
+                var cxaxis = {
+                        min : 50,
+                        max : 500+100,
+                        ticks : range
+                    };
+                
+                var cyaxis = {
+                        min : 0,
+                        max : 2000
+                    };
+                
+                var data_formats = [ 
+                    { tables : dbtables , name : "FORMAT_BINARY_1B_CACHED_TILES", steps : range, tolerance : tolerance, xaxis : cxaxis, yaxis : cyaxis }, 
+                    //{ tables : dbtables , name : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE", steps : range, tolerance : tolerance, xaxis : cxaxis, yaxis : cyaxis }, 
+                    { tables : dbtables , name : "FORMAT_GJ_CACHED_TILES", steps : range, tolerance : tolerance, xaxis : cxaxis, yaxis : cyaxis }, 
+                    //{ tables : dbtables , name : "FORMAT_GJ_CACHED_TILES_SIMPLE", steps : range, tolerance : tolerance, xaxis : cxaxis, yaxis : cyaxis }
+                    { tables : dbtables , name : "FORMAT_BINARY_2B_ONDEMAND", steps : range, tolerance : tolerance, xaxis : cxaxis, yaxis : cyaxis }, 
+                    //{ tables : dbtables , name : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE", steps : range, tolerance : tolerance, xaxis : cxaxis, yaxis : cyaxis }, 
+                    { tables : dbtables , name : "FORMAT_BINARY_8B_ONDEMAND", steps : range, tolerance : tolerance, xaxis : cxaxis, yaxis : cyaxis }, 
+                    //{ tables : dbtables , name : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE", steps : range, tolerance : tolerance, xaxis : cxaxis, yaxis : cyaxis }, 
+                    ];
+                
+                for(var format in data_formats)
+                {
+                    var obj = data_formats[format];
+                    
+                    for(var tbl in obj.tables)
+                    {
+                    
+                        var table = obj.tables[tbl];
+                
+                        var values = new Array();
+                        for(var i=0;i<obj.steps.length;i++)
+                        {
+                            var mtrx = getValuesMatrix(data[table][obj.name], obj.steps[i], obj.tolerance);
+                            var result = getMedianMatrixX(mtrx);
+                            //console.log(result);
+                            values.push([ [obj.steps[i], result.query] , [obj.steps[i], result.client] , [obj.steps[i], result.server] ]);
+                        }
+                        //console.log(values);
+                        var values_matrix = jStat(values).transpose();
+                        
+                        //console.log(values_matrix.toArray());
+                        
+                        var series_data = new Array();
+                        var series_meta = [{ label : "Query latency", color : color.red },
+                                            { label : "Client processing latency", color : color.green },
+                                            { label : "Server processing latency", color : color.blue }];
+                                            
+                        var values_array = values_matrix.toArray();
+                        for(var i=0;i<values_array.length;i++)
+                        {
+                            var val = values_array[i];
+                            //console.log(val);
+                            series_data.push({ data : val, label : series_meta[i].label, color : series_meta[i].color })
+                        }
+                        //console.log(series_data);
+                        
+                        $("#charts").append('<p>'+obj.name+' '+table+'</p><div id="LATENCIES_'+obj.name+'_'+table+'" style="width:90%; margin-left: 5%; margin-right: 5%; margin-top: 2em;  height: 400px;">');
+                        
+                        
+                        
+                        $.plot($("#LATENCIES_"+obj.name+'_'+table),
+                        series_data,
+                        
+                        {
+                            series : {stack : true, bars : { show: true, barWidth : 50, align : "center" }},
+                            
+                            yaxis: obj.yaxis
+                            ,
+                            xaxis: obj.xaxis
+                            
+                        });
+                    
+                    }
+                
+                }
+                
+                /*
+                var latencies = ptest.extractFeaturesClientProcessingLatencies();
+                for(var table_name in latencies)
+                {
+                var window_size = 9;
+                var FORMAT_BINARY_1B_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES"], 11, window_size);
+                var FORMAT_BINARY_1B_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"], 11, window_size);
+                var FORMAT_BINARY_2B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND"], 11, window_size);
+                var FORMAT_BINARY_2B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND_SIMPLE"], 11, window_size);
+                var FORMAT_BINARY_8B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND"], 11, window_size);
+                var FORMAT_BINARY_8B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND_SIMPLE"], 11, window_size);
+                var FORMAT_GJ_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES"], 11, window_size);
+                var FORMAT_GJ_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES_SIMPLE"], 11, window_size);
+                
+                
+                
+                $("#charts").append('<div id="CLIENT_LATENCIES_'+table_name+'" style="width:90%; margin-left: 5%; margin-right: 5%; margin-top: 2em;  height: 400px;">');
+                
+                $.plot($("#CLIENT_LATENCIES_"+table_name),
+                [  { data : FORMAT_BINARY_1B_CACHED_TILES.filtered, label : "FORMAT_BINARY_1B_CACHED_TILES", color : color.red }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES.filtered_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES"},  
+                   
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES_SIMPLE.filtered, label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE", color : color.red2 }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES_SIMPLE.filtered_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"},   
+                   
+                   { data : FORMAT_BINARY_2B_ONDEMAND.filtered, label : "FORMAT_BINARY_2B_ONDEMAND", color : color.blue}, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND.filtered_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND"},   
+                   
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND_SIMPLE.filtered, label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE", color : color.blue2}, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND_SIMPLE.filtered_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : FORMAT_BINARY_8B_ONDEMAND.filtered, label : "FORMAT_BINARY_8B_ONDEMAND", color : color.green}, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND.filtered_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND"},   
+                   
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND_SIMPLE.filtered, label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE", color : color.green2}, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND_SIMPLE.filtered_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : FORMAT_GJ_CACHED_TILES.filtered, label : "FORMAT_GJ_CACHED_TILES", color : color.purple}, 
+                   //{ data : FORMAT_GJ_CACHED_TILES.filtered_with_tolerance, label : "FORMAT_GJ_CACHED_TILES"}, 
+                   
+                   //{ data : FORMAT_GJ_CACHED_TILES_SIMPLE.filtered, label : "FORMAT_GJ_CACHED_TILES_SIMPLE", color : color.purple2}, 
+                   //{ data : FORMAT_GJ_CACHED_TILES_SIMPLE.filtered_with_tolerance, label : "FORMAT_GJ_CACHED_TILES_SIMPLE"}, 
+                ],
+                
+                {
+                    series : {lines : {show : true}, points : {show : true}},
+                    
+                    yaxis: 
+                    {
+                        min : 0,
+                        max : 400
+                    },
+                    legend : {position:"se"},
+                    xaxis: 
+                    {
+                        min : 0,
+                        max : 200
+                    }
+                    
+                });
+                
+                }
+                
+                latencies = ptest.extractFeaturesServerProcessingLatencies();
+                for(var table_name in latencies)
+                {
+                
+                var window_size = 2;
+                var FORMAT_BINARY_1B_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES"], 11, window_size);
+                var FORMAT_BINARY_1B_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"], 11, window_size);
+                var FORMAT_BINARY_2B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND"], 11, window_size);
+                var FORMAT_BINARY_2B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND_SIMPLE"], 11, window_size);
+                var FORMAT_BINARY_8B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND"], 11, window_size);
+                var FORMAT_BINARY_8B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND_SIMPLE"], 11, window_size);
+                var FORMAT_GJ_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES"], 11, window_size);
+                var FORMAT_GJ_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES_SIMPLE"], 11, window_size)
+                
+                
+                
+                $("#charts").append('<div id="SERVER_LATENCIES_'+table_name+'" style="width:90%; margin-left: 5%; margin-right: 5%; margin-top: 2em;  height: 400px;">');
+                
+                $.plot($("#SERVER_LATENCIES_"+table_name),
+                [  { data : FORMAT_BINARY_1B_CACHED_TILES.filtered, label : "FORMAT_BINARY_1B_CACHED_TILES", color : color.red }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES.filtered_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES"},  
+                   
+                   { data : FORMAT_BINARY_1B_CACHED_TILES_SIMPLE.filtered, label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE", color : color.red2 }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES_SIMPLE.filtered_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"},   
+                   
+                   { data : FORMAT_BINARY_2B_ONDEMAND.filtered, label : "FORMAT_BINARY_2B_ONDEMAND", color : color.blue}, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND.filtered_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND"},   
+                   
+                   { data : FORMAT_BINARY_2B_ONDEMAND_SIMPLE.filtered, label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE", color : color.blue2}, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND_SIMPLE.filtered_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : FORMAT_BINARY_8B_ONDEMAND.filtered, label : "FORMAT_BINARY_8B_ONDEMAND", color : color.green}, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND.filtered_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND"},   
+                   
+                   { data : FORMAT_BINARY_8B_ONDEMAND_SIMPLE.filtered, label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE", color : color.green2}, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND_SIMPLE.filtered_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : FORMAT_GJ_CACHED_TILES.filtered, label : "FORMAT_GJ_CACHED_TILES", color : color.purple}, 
+                   //{ data : FORMAT_GJ_CACHED_TILES.filtered_with_tolerance, label : "FORMAT_GJ_CACHED_TILES"}, 
+                   
+                   { data : FORMAT_GJ_CACHED_TILES_SIMPLE.filtered, label : "FORMAT_GJ_CACHED_TILES_SIMPLE", color : color.purple2}, 
+                   //{ data : FORMAT_GJ_CACHED_TILES_SIMPLE.filtered_with_tolerance, label : "FORMAT_GJ_CACHED_TILES_SIMPLE"}, 
+                ],
+                
+                {
+                    series : {lines : {show : true}, points : {show : true}},
+                    
+                    yaxis: 
+                    {
+                        min : 0,
+                        max : 200
+                    },
+                    legend : {position:"se"},
+                    xaxis: 
+                    {
+                        min : 0,
+                        max : 200
+                    }
+                    
+                });
+                
+                }
+                
+                latencies = ptest.extractFeaturesQueryLatencies();
+                for(var table_name in latencies)
+                {
+                
+                var window_size = 9;
+                var FORMAT_BINARY_1B_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES"], 11, window_size);
+                var FORMAT_BINARY_1B_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"], 11, window_size);
+                var FORMAT_BINARY_2B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND"], 11, window_size);
+                var FORMAT_BINARY_2B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND_SIMPLE"], 11, window_size);
+                var FORMAT_BINARY_8B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND"], 11, window_size);
+                var FORMAT_BINARY_8B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND_SIMPLE"], 11, window_size);
+                var FORMAT_GJ_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES"], 11, window_size);
+                var FORMAT_GJ_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES_SIMPLE"], 11, window_size)
+                
+                
+                
+                $("#charts").append('<div id="QUERY_LATENCIES_'+table_name+'" style="width:90%; margin-left: 5%; margin-right: 5%; margin-top: 2em;  height: 400px;">');
+                
+                $.plot($("#QUERY_LATENCIES_"+table_name),
+                [  { data : FORMAT_BINARY_1B_CACHED_TILES.filtered, label : "FORMAT_BINARY_1B_CACHED_TILES", color : color.red }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES.filtered_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES"},  
+                   
+                   { data : FORMAT_BINARY_1B_CACHED_TILES_SIMPLE.filtered, label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE", color : color.red2 }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES_SIMPLE.filtered_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"},   
+                   
+                   { data : FORMAT_BINARY_2B_ONDEMAND.filtered, label : "FORMAT_BINARY_2B_ONDEMAND", color : color.blue}, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND.filtered_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND"},   
+                   
+                   { data : FORMAT_BINARY_2B_ONDEMAND_SIMPLE.filtered, label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE", color : color.blue2}, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND_SIMPLE.filtered_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : FORMAT_BINARY_8B_ONDEMAND.filtered, label : "FORMAT_BINARY_8B_ONDEMAND", color : color.green}, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND.filtered_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND"},   
+                   
+                   { data : FORMAT_BINARY_8B_ONDEMAND_SIMPLE.filtered, label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE", color : color.green2}, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND_SIMPLE.filtered_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : FORMAT_GJ_CACHED_TILES.filtered, label : "FORMAT_GJ_CACHED_TILES", color : color.purple}, 
+                   //{ data : FORMAT_GJ_CACHED_TILES.filtered_with_tolerance, label : "FORMAT_GJ_CACHED_TILES"}, 
+                   
+                   { data : FORMAT_GJ_CACHED_TILES_SIMPLE.filtered, label : "FORMAT_GJ_CACHED_TILES_SIMPLE", color : color.purple2}, 
+                   //{ data : FORMAT_GJ_CACHED_TILES_SIMPLE.filtered_with_tolerance, label : "FORMAT_GJ_CACHED_TILES_SIMPLE"}, 
+                ],
+                
+                {
+                    series : {lines : {show : true}, points : {show : true}},
+                    
+                    yaxis: 
+                    {
+                        min : 0,
+                        max : 500
+                    },
+                    legend : {position:"se"},
+                    xaxis: 
+                    {
+                        min : 0,
+                        max : 100
+                    }
+                    
+                });
+                
+                }
+                  */  
+                
+                
+                /*
+                 * Result object
+                 * 
+                 * Constructs an object based on the raw data, removes the "spikes", 
+                 * and calculates mean value and standard deviation
+                 */
+                function Result(data){
+                    this.raw_data = data,
+                    
+                    this.data = [];
+                    for(var i=0;i<data.length;i++)
+                    {
+                        if(data[i]<350) { this.data.push(data[i]); }
+                    }
+                    
+                    this.mean = 0.0;
+                    for(var i=0;i<this.data.length;i++)
+                    {
+                        this.mean += this.data[i];
+                    }
+                    this.mean /= this.data.length;
+                    
+                    var std_dev_square_sum = 0.0;
+                    for(var i=0;i<this.data.length;i++)
+                    {
+                        std_dev_square_sum += Math.pow((this.data[i]-this.mean),2);
+                    }
+                    this.std_dev = Math.sqrt(std_dev_square_sum/this.data.length);
+                }
+                
+                /*
+                 * PlotResult object
+                 * 
+                 * Constructs an object based on a Result object, creates normal distribution and labels
+                 */
+                function PlotResult(Result)
+                {
+                    this.normal_distribution = [];
+                    
+                    this._getNStdDev = function(mean,stdev,n) {return (mean+(n*stdev));}
+                    
+                    this.ticks = [];
+                    for(var n=-3;n<=3;n++)
+                    {
+                        var str;
+                        if(n<-1) str=n+"\u03C3";
+                        else if(n>1) str="\+"+n+"\u03C3";
+                        else if(n==0) str="0";
+                        else str="\u03C3";
+                        
+                        if(n>0){
+                        str += " (+" + (n*Result.std_dev).toPrecision(2) + " ms)";
+                        }
+                        else if(n<0){
+                        str += " (" + (n*Result.std_dev).toPrecision(2) + " ms)";
+                        }
+                        else
+                        {
+                            str += " (" + Result.mean.toPrecision(5) + " ms)";
+                        }
+                        
+                        this.ticks.push([ this._getNStdDev(Result.mean,Result.std_dev,n), str  ])
+                    }
+                    
+                    
+                    // Gaussian function
+                    function calcNormalDistr(x,mean,stdev)
+                    {
+                        var exp = Math.pow(Math.E,-((Math.pow(x-mean,2))/(2*Math.pow(stdev,2))));
+                        
+                        var f = (1.0/(Math.sqrt(2*Math.PI*Math.pow(stdev,2))));
+                        
+                        return f*exp;
+                    }
+                    
+                    
+                    for(var i = 75; i<190; i++) {
+                        this.normal_distribution.push([i,calcNormalDistr(i, Result.mean, Result.std_dev)]);
+                    }
+                    
+                }
+                
+                /*
+                // Plot results for Chromium on Linux
+                
+                var chromelinux = new Result([133, 134, 132, 131, 132, 131, 163, 132, 131, 132, 132, 132, 131, 131, 132, 132, 131, 132, 144, 132, 132, 131, 131, 131, 131, 132, 131, 131, 131, 132, 132, 132, 131, 132, 131, 133, 132, 132, 132, 132, 4989, 4559, 4106, 2171, 132, 132, 132, 132, 132, 131, 132, 131, 132, 131, 132, 132, 131, 132, 131, 131, 132, 132, 131, 132, 134, 132, 133, 131, 132, 131, 131, 132, 131, 131, 132, 132, 131, 132, 132, 131, 133, 131, 133, 132, 131, 131, 131, 131, 131, 132, 133, 132, 134, 131, 131, 131, 131, 131, 131, 131, 132, 132, 131, 132, 132, 131, 132, 131, 132, 132, 132, 133, 131, 132, 131, 131, 132, 131, 132, 131, 132, 131, 131, 133, 131, 131, 131, 131, 131, 131, 132, 132, 131, 132, 131, 131, 136, 132, 131, 131, 132, 132, 132, 131, 131, 131, 132, 131, 131, 131, 131, 131, 133, 131, 132, 131, 131, 131, 132, 132, 138, 131, 131, 131, 131, 132, 131, 132, 132, 131, 132, 131, 131, 132, 132, 131, 132, 132, 133, 131, 133, 131, 138, 133, 133, 133, 131, 131, 133, 132, 132, 131, 133, 132, 132, 132, 132, 131, 132, 132, 134, 131, 131, 132, 132, 132, 133, 133, 131, 132, 131, 131, 131, 134, 136, 132, 131, 131, 132, 131, 132, 131, 131, 131, 133, 132, 132, 132, 132, 132, 132, 132, 131, 131, 132, 131, 131, 131, 132, 131, 131, 132, 131, 131, 132, 132, 132, 132, 132, 136, 132, 132, 132, 151, 132, 132, 135, 132, 131, 131, 134, 130, 131, 133, 132, 132, 132, 132, 132, 132, 134, 132, 132, 131, 135, 132, 131, 132, 131, 134, 131, 136, 132, 132, 131, 132, 131, 132, 131, 131, 133, 131, 131, 132, 132, 132, 131, 132, 133, 132, 132, 134, 135, 132, 133, 135, 131, 131, 133, 134, 131, 134, 136, 134, 132, 132, 133, 132, 131, 132, 134, 132, 132, 133, 131, 135, 131, 132, 132, 131, 135, 132, 132, 132, 131, 132, 148, 132, 153, 131, 132, 132, 131, 131, 132, 131, 131, 133, 131, 131, 131, 132, 131, 131, 132, 132, 134, 130, 132, 131, 132, 132, 132, 132, 132, 137, 133, 132, 131, 132, 136, 133, 131, 132, 131, 133, 132, 131, 131, 132, 131, 134, 132, 131, 132, 130, 131, 131, 133, 136, 137, 131, 131, 131, 136, 132, 132, 131, 136, 130, 135, 133, 131, 132, 133, 137, 135, 131, 133, 131, 131, 134, 134, 135, 132, 134, 135, 132, 131, 132, 131, 131, 132, 134, 131, 131, 131, 131, 131, 131, 132, 132, 131, 132, 146, 135, 131, 131, 132, 131, 132, 132, 131, 133, 131, 131, 132, 172, 131, 132, 133, 131, 131, 133, 131, 135, 135, 133, 133, 132, 135, 131, 132, 182, 132, 131, 131, 133, 137, 136, 136, 132, 132, 133, 131, 131, 131, 137, 131, 132, 132, 134, 134, 131, 132, 135, 134, 131, 132, 132, 132, 133, 136, 136, 140, 141, 131, 131, 132, 132, 132, 132, 132, 131, 131, 132, 131, 131, 136, 134, 132, 132, 132, 132, 131, 132, 131, 132, 135, 131, 131, 132, 137, 131, 131, 132, 133, 134, 132, 133, 132, 132, 131, 226, 136, 135, 227, 143, 132, 131, 133, 133, 132, 132, 140, 132, 139, 134, 131, 227, 133, 132, 131, 216, 133, 131, 258, 135, 356, 453, 397, 386, 444, 441, 670, 730, 832, 804, 980, 980, 1038, 1130, 1174, 1354, 1613, 1581, 1885, 1886, 1654, 1358, 1170, 600, 271, 131, 330, 442, 515, 681, 691, 745, 1048, 1252, 1640, 1906, 2175, 2313, 2132, 2383, 2529, 2507, 2619, 2738, 2805, 3085, 3213, 3208, 2874, 2537, 2180, 1977, 1649, 1342, 1124, 768, 378, 132, 131, 131, 132, 137, 131, 133, 132, 132, 131, 131, 356, 736, 298, 132, 132, 132, 138, 131, 132, 135, 136, 132, 131, 138, 132, 139, 131, 132, 131, 131]);
+                
+                console.log("Chromium on Linux; mean: "+chromelinux.mean+" and standard deviation: "+chromelinux.std_dev);
+                console.log("data size (n) : "+chromelinux.data.length);
+                var Plot_chromelinux = new PlotResult(chromelinux);
+                
+                // create a plot with flot library
+                $.plot($("#chromelinux"), 
+                [ 
+                    { 
+                        data : Plot_chromelinux.normal_distribution, 
+                        label : "Web Sockets on Chrome (Ubuntu Linux)",
+                        bars : {show:true} 
+                    }
+                ],
+                {
+                    xaxis: 
+                    {
+                        ticks : Plot_chromelinux.ticks
+                    }
+                    
+                });
+                
+                // Plot results for Chrome on Windows
+                
+                var chromewindows = new Result([132, 135, 133, 132, 151, 134, 132, 132, 132, 132, 132, 132, 132, 132, 149, 134, 132, 133, 131, 132, 154, 133, 132, 132, 133, 132, 132, 133, 131, 131, 133, 137, 145, 132, 133, 133, 132, 135, 134, 132, 132, 132, 133, 132, 132, 132, 132, 132, 133, 132, 132, 169, 133, 132, 131, 133, 159, 132, 132, 132, 135, 136, 159, 132, 132, 131, 133, 132, 133, 132, 150, 133, 133, 133, 133, 132, 133, 133, 133, 132, 136, 133, 131, 132, 132, 135, 131, 132, 132, 132, 132, 132, 133, 132, 133, 132, 132, 132, 131, 131, 133, 132, 133, 132, 131, 132, 132, 132, 132, 132, 133, 132, 132, 132, 132, 133, 131, 132, 132, 133, 133, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 133, 133, 132, 132, 132, 132, 133, 132, 133, 133, 132, 133, 131, 134, 209, 132, 132, 133, 132, 132, 131, 132, 151, 133, 132, 133, 132, 132, 131, 132, 131, 132, 134, 132, 132, 132, 133, 132, 132, 132, 133, 132, 132, 132, 132, 132, 132, 132, 132, 134, 132, 133, 133, 135, 132, 131, 132, 132, 132, 131, 132, 131, 132, 132, 132, 133, 132, 131, 132, 132, 133, 132, 132, 134, 132, 131, 132, 132, 133, 132, 132, 134, 135, 216, 132, 131, 164, 305, 133, 131, 135, 132, 131, 132, 135, 134, 132, 132, 132, 132, 132, 132, 132, 132, 134, 132, 132, 132, 132, 132, 132, 131, 132, 132, 132, 132, 131, 132, 132, 133, 132, 131, 133, 132, 131, 131, 132, 132, 132, 131, 132, 133, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 133, 132, 132, 131, 149, 132, 131, 132, 132, 131, 132, 132, 131, 131, 135, 131, 132, 135, 133, 134, 132, 132, 132, 131, 132, 131, 131, 132, 131, 133, 133, 132, 131, 133, 132, 133, 131, 132, 134, 132, 132, 131, 132, 222, 135, 134, 130, 133, 132, 133, 132, 131, 132, 132, 132, 131, 131, 131, 132, 132, 131, 131, 132, 135, 132, 132, 132, 132, 132, 131, 132, 131, 131, 170, 132, 132, 134, 131, 134, 134, 136, 135, 136, 132, 133, 134, 133, 132, 131, 131, 132, 131, 136, 131, 132, 131, 131, 133, 135, 132, 132, 132, 132, 134, 135, 131, 132, 132, 131, 131, 132, 5082, 4544, 4120, 133, 132, 131, 132, 132, 135, 135, 133, 132, 132, 135, 131, 131, 132, 131, 132, 133, 131, 133, 132, 132, 132, 132, 132, 131, 132, 133, 132, 132, 135, 131, 133, 132, 132, 131, 132, 133, 131, 131, 134, 132, 132, 132, 131, 131, 132, 133, 131, 132, 132, 132, 132, 132, 132, 132, 131, 133, 131, 132, 131, 131, 131, 131, 134, 132, 132, 132, 131, 132, 132, 131, 132, 131, 132, 131, 131, 131, 131, 135, 132, 136, 132, 131, 131, 132, 132, 131, 155, 168, 131, 131, 131, 131, 132, 131, 132, 132, 132, 132, 132, 133, 132, 132, 132, 133, 131, 132, 131, 131, 132, 132, 132, 132, 135, 132, 131, 132, 131, 131, 131, 132, 131, 132, 140, 131, 131, 132, 132, 130, 134, 133, 133, 133, 131, 132, 131, 131, 131, 130, 131, 131, 131, 131, 133, 131, 169, 131, 131, 131, 131, 133, 132, 132, 134, 133, 134, 131, 131, 134, 131, 132, 134, 132, 131, 131, 132, 134, 131, 132, 131, 181, 131, 141, 213, 132, 133, 131, 132, 132, 131, 131, 131, 132, 208, 196, 131, 133, 135, 132, 132, 195, 132, 132, 135, 132, 134, 131, 131, 132, 131, 134, 131, 134, 160, 187, 131, 133, 132, 132, 134, 131, 133, 138, 131, 148, 131, 133, 132, 131, 131, 133, 132, 131, 132, 132, 131, 227, 191, 175, 247, 141, 135, 131, 132, 132, 160, 132, 132, 184, 188, 131, 201, 150, 133, 131, 131, 134, 132, 134, 132, 131, 131, 131, 131, 131, 133, 131, 158, 135, 132, 132, 131, 182, 216, 295, 143, 164, 131, 131, 132, 131, 131, 131, 134, 146, 135, 192, 132, 131, 135, 131, 131, 134, 138, 144, 159, 131, 131, 156, 134, 224, 149, 131, 138, 132, 131, 131, 227, 132, 208, 132, 176, 131, 131, 131, 131, 218, 222, 224, 135, 131, 131, 145, 148, 147, 134, 135, 131, 131, 236, 228, 131, 132, 131, 131, 132, 133, 133, 131, 131, 132, 133, 134, 133, 133, 133, 132, 134, 132, 131, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 131, 131, 131, 131, 131, 132, 132, 134, 132, 131, 131, 131, 132, 131, 131, 133, 132, 132, 132, 132, 132, 132, 132, 132, 132, 133, 132, 132, 132, 132, 133, 132, 133, 132, 132, 132, 132, 132, 132, 132, 133, 139, 132, 132, 132, 132, 133, 132, 133, 132, 132, 132, 132] );
+                
+                console.log("Chrome on Windows; mean: "+chromewindows.mean+" and standard deviation: "+chromewindows.std_dev);
+                console.log("data size (n) : "+chromewindows.data.length);
+                var Plot_chromewindows = new PlotResult(chromewindows);
+                
+                // create a plot with flot library
+                $.plot($("#chromewindows"), 
+                [ 
+                    { 
+                        data : Plot_chromewindows.normal_distribution,
+                        label : "Web Sockets on Chrome (Windows)",
+                        bars : {show:true} 
+                    }
+                ],
+                {
+                    xaxis: 
+                    {
+                        ticks : Plot_chromewindows.ticks
+                    }
+                    
+                });
+               */ 
+            });
+        </script>
+    </head>
+    <body>
+        <div id="charts" style="font-size: 18pt;"></div>
+        <!-- <div id="chromelinux" style="width:90%; margin-left: 5%; margin-right: 5%; height: 400px;"></div> -->
+        <!-- <div id="chromewindows" style="width:100%px; height: 400px;"></div> -->
+    </body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+    <title>WMS sample</title>
+    <meta charset="utf-8" />
+    <!-- Leaflet CSS --> 
+    <link rel="stylesheet" href="leaflet/leaflet.css" />
+    <!--[if lte IE 8]><link rel="stylesheet" href="leaflet/leaflet.ie.css" /><![endif]-->
+    
+    <!-- Leaflet JavaScript -->
+    <script src="leaflet/leaflet.js"></script>
+    
+    
+    <script src="jquery.min.js"></script>
+    <script type="text/javascript">
+    $(document).ready(function() {
+        
+        /* Compability function for Android OS
+        var video_element = document.getElementById('video');
+        video_element.addEventListener('click',function(){
+        video_element.play();
+        },false);
+        */
+        
+        var map = new L.Map('map');
+        
+        // Add openstreetmap tile layer
+        var layers_str = "vectortiles:ANNENBYGNING,vectortiles:BYGNING,vectortiles:VEG";               
+        //var layers_str = "vectortiles:VEGKANTAVKJORSEL,vectortiles:DAM,vectortiles:BRU,vectortiles:VEGDEKKEKANT,vectortiles:ANNETGJERDE,vectortiles:AREALBRUKGRENSE,vectortiles:VEG,vectortiles:AREALRESSURSGRENSE,vectortiles:BYGNINGBRU,vectortiles:BYGNINGSDELELINJE,vectortiles:ANNENBYGNING,vectortiles:BYGNING,vectortiles:ALLE,vectortiles:AREALRESSURSFLATE,vectortiles:BRUAVGRENSNING,vectortiles:VEGGFRITTSTAENDE,vectortiles:VEGREKKVERK,vectortiles:ANNETVEGAREALAVGRENSNING,vectortiles:BAUTASTATUEGRENSE,vectortiles:BESKRIVENDEHJELPELINJEANLEGG,vectortiles:BRONN,vectortiles:BRONNGRENSE,vectortiles:DAMKANT,vectortiles:FASADELIV,vectortiles:FERISTAVGRENSNING,vectortiles:FLYTEBRYGGE,vectortiles:FORTAUSKANT,vectortiles:FORTAUSKANTYTRE,vectortiles:FRITTSTAENDETRAPP,vectortiles:FRITTSTAENDETRAPPKANT,vectortiles:FUNDAMENT,vectortiles:FUNDAMENTKANT,vectortiles:GANGSYKKELVEG,vectortiles:GANGSYKKELVEGKANT,vectortiles:GANGVEGKANT,vectortiles:GRUNNMUR,vectortiles:HEKK,vectortiles:HOPPBAKKE,vectortiles:IDRETTSANLEGG,vectortiles:JERNBANEPLATTFORMKANT,vectortiles:KAIBRYGGE,vectortiles:KAIBRYGGEKANT,vectortiles:KULVERT,vectortiles:LAVEBRU,vectortiles:LYSLOYPE,vectortiles:MONELINJE,vectortiles:PARK,vectortiles:PARKERINGSOMRADE,vectortiles:PARKERINGSOMRADEAVGRENSNING,vectortiles:PIPE,vectortiles:PIPEKANT,vectortiles:RORGATE,vectortiles:SILO,vectortiles:SILOKANT,vectortiles:SKILTPORTAL,vectortiles:SKITREKK,vectortiles:SKRAFORSTOTNINGSMURAVGRENSNING,vectortiles:SKYTEBANEINNRETNING,vectortiles:SLIPP,vectortiles:SPORMIDT,vectortiles:STEIN,vectortiles:STEINGJERDE,vectortiles:STEINOMRISS,vectortiles:STI,vectortiles:STIKKRENNE,vectortiles:STOLHEIS,vectortiles:SVOMMEBASSENGKANT,vectortiles:TAKKANT,vectortiles:TAKOVERBYGG,vectortiles:TAKOVERBYGGKANT,vectortiles:TAKSPRANG,vectortiles:TAKSPRANGBUNN,vectortiles:TANK,vectortiles:TANKKANT,vectortiles:TARNKANT,vectortiles:TRAFIKKOYKANT,vectortiles:TRAKTORVEGKANT,vectortiles:TRAPPBYGG,vectortiles:TRIBUNEKANT,vectortiles:VEGKANTANNETVEGAREAL,vectortiles:VEGSPERRING,vectortiles:VERANDA";        
+        var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        var osmAttrib='Map data © openstreetmap contributors';
+        var osm = new L.TileLayer(osmUrl,{minZoom: 8, maxZoom: 18, attribution: osmAttrib});
+        
+        var wms = new L.TileLayer.WMS("http://192.168.1.100:8080/geoserver/vectortiles/wms",
+            {
+            layers: layers_str, //"vectortiles:VEG,vectortiles:BRU,vectortiles:DAM,vectortiles:ALLE,vectortiles:ANNETGJERDE,vectortiles:ANNENBYGNING",
+            format: 'image/png',
+            transparent: true
+            } );
+        
+        var center = new L.LatLng(59.9109, 10.5234); // geographical point (longitude and latitude)
+        //var center = new L.LatLng(59.94026, 10.4991); // geographical point (longitude and latitude)
+        
+        map.setView(center, 14).addLayer(wms);
+        
+        map.on('click', function(e){console.log(e.latlng);});
+        
+        
+    });
+    </script>
+    
+</head>
+
+<body>
+    <div id="map" style="height: 600px;width: 800px;"></div>
+</body>
+
+</html>

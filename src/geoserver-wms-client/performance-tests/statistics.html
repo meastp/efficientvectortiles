@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <title>Request/response time for Web Sockets</title>
+        
+        <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="excanvas.min.js"></script><![endif]-->
+        
+        <script type="text/javascript" src="flot/jquery.min.js"></script>
+        <script type="text/javascript" src="flot/jquery.flot.min.js"></script>
+        
+        <script type="text/javascript" src="data/data.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function() {
+                
+                
+                for(var zoom_lvl in COLLECTED_DATA)
+                {
+                    
+                    COLLECTED_DATA[zoom_lvl]["stats"] = new Object();
+                    
+                    COLLECTED_DATA[zoom_lvl]["stats"].total_size = NaN;
+                    COLLECTED_DATA[zoom_lvl]["stats"].avg_tile_size = NaN;
+                    COLLECTED_DATA[zoom_lvl]["stats"].avg_latency = NaN;
+                    
+                    var tile_size_total = 0;
+                    var latency_total = new Array();
+                    
+                    for(var i=0;i<COLLECTED_DATA[zoom_lvl]["tiles"].length;i++)
+                    {
+                        tile_size_total += COLLECTED_DATA[zoom_lvl]["tiles"][i]["size"];
+                        
+                        var local_latency_total = 0;
+                        for(var j=0;j<COLLECTED_DATA[zoom_lvl]["tiles"][i]["time"].length;j++)
+                        {
+                            local_latency_total += COLLECTED_DATA[zoom_lvl]["tiles"][i]["time"][j]*1000; // in milliseconds
+                        }
+                        
+                        latency_total.push(local_latency_total/COLLECTED_DATA[zoom_lvl]["tiles"][i]["time"].length);
+                        
+                    }
+                    console.log(latency_total);
+                    COLLECTED_DATA[zoom_lvl]["stats"].avg_tile_size = tile_size_total/COLLECTED_DATA[zoom_lvl]["tiles"].length;
+                    COLLECTED_DATA[zoom_lvl]["stats"].total_size = tile_size_total;
+                    COLLECTED_DATA[zoom_lvl]["stats"].avg_latency = Math.max.apply(null, latency_total);
+                
+                }
+                
+                console.log(COLLECTED_DATA);
+                
+                var data_size_group = new Object();
+                data_size_group.data = new Array();
+                data_size_group.label = "Average Data Size (KB) / Zoom level";
+                
+                var total_data_size_group = new Object();
+                total_data_size_group.data = new Array();
+                total_data_size_group.label = "Total Data Size (KB) / Zoom level";
+                
+                var latency_group = new Object();
+                latency_group.data = new Array();
+                latency_group.label = "Average Latency (ms) / Zoom level";
+                
+                for(var zoom_lvl in COLLECTED_DATA)
+                {
+                    data_size_group.data.push([ COLLECTED_DATA[zoom_lvl]["stats"]["avg_tile_size"] , COLLECTED_DATA[zoom_lvl]["zoomlvl"]]);
+                    total_data_size_group.data.push([ COLLECTED_DATA[zoom_lvl]["stats"]["total_size"] , COLLECTED_DATA[zoom_lvl]["zoomlvl"]]);
+                    latency_group.data.push([ COLLECTED_DATA[zoom_lvl]["stats"]["avg_latency"] , COLLECTED_DATA[zoom_lvl]["zoomlvl"]]);
+                }
+                
+                
+                $("#charts").append('<div id="AVG_DATA_SIZE" style="width:90%; margin-left: 5%; margin-right: 5%; height: 400px;">');
+                
+                $.plot($("#AVG_DATA_SIZE"),
+                [ data_size_group  ],
+                
+                {
+                    series : {lines : {show : true}, points : {show : true}},
+                    
+                    yaxis: 
+                    {
+                        min : 13,
+                        max : 18,
+                        ticks : [[14, "zoom level 14"], [15, "zoom level 15"], [16, "zoom level 16"], [17, "zoom level 17"]]
+                    },
+                    xaxis: 
+                    {
+                        min : 0,
+                        max : 60,
+                        ticks : [[10, "10 KB" ], [20, "20 KB"], [30, "30 KB"], [40, "40 KB"], [50, "50 KB"]]
+                    }
+                    
+                    
+                });
+                
+                
+                $("#charts").append('<div id="TOTAL_DATA_SIZE" style="width:90%; margin-left: 5%; margin-right: 5%; height: 400px;">');
+                
+                $.plot($("#TOTAL_DATA_SIZE"),
+                [ total_data_size_group  ],
+                
+                {
+                    series : {lines : {show : true}, points : {show : true}},
+                    
+                    yaxis: 
+                    {
+                        min : 13,
+                        max : 18,
+                        ticks : [[14, "zoom level 14"], [15, "zoom level 15"], [16, "zoom level 16"], [17, "zoom level 17"]]
+                    },
+                    xaxis: 
+                    {
+                        min : 0,
+                        max : 1000,
+                        ticks : [[0, "0 KB" ], [200, "200 KB"], [400, "400 KB"], [800, "800 KB"], [900, "900 KB"]]
+                        
+                    }
+                    
+                });
+                
+                $("#charts").append('<div id="AVG_LATENCY" style="width:90%; margin-left: 5%; margin-right: 5%; height: 400px;">');
+                
+                $.plot($("#AVG_LATENCY"),
+                [ latency_group  ],
+                
+                {
+                    series : {lines : {show : true}, points : {show : true}},
+                    
+                    yaxis: 
+                    {
+                        min : 13,
+                        max : 18,
+                        ticks : [[14, "zoom level 14"], [15, "zoom level 15"], [16, "zoom level 16"], [17, "zoom level 17"]]
+                    },
+                    xaxis: 
+                    {
+                        min : -100,
+                        max : 6000,
+                        ticks : [
+                            [0, "0 ms"],
+                            [500, "500 ms"],
+                            [1000, "1000 ms"],
+                            [2500, "2500 ms"],
+                            [5000, "5000 ms"],
+                            [5500, "5500 ms"],
+                        ]
+                    }
+                    
+                });
+                
+            });
+        </script>
+    </head>
+    <body>
+        <div id="charts" style="font-size: 18pt;"></div>
+        <!-- <div id="chromelinux" style="width:90%; margin-left: 5%; margin-right: 5%; height: 400px;"></div> -->
+        <!-- <div id="chromewindows" style="width:100%px; height: 400px;"></div> -->
+    </body>
+</html>

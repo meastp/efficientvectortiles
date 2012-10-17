@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <title>Request/response time for Web Sockets</title>
+        
+        <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="excanvas.min.js"></script><![endif]-->
+        
+        <script type="text/javascript" src="flot/jquery.min.js"></script>
+        <script type="text/javascript" src="flot/jquery.flot.min.js"></script>
+        <script type="text/javascript" src="flot/jquery.flot.dashes.js"></script>
+        
+        <script type="text/javascript" src="data/data.js"></script>
+        <script type="text/javascript" src="collect_data.js"></script>
+        <script type="text/javascript" src="process_data.js"></script>
+        <script type="text/javascript" src="draw_charts.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function() {
+                
+                
+                
+                ptest.results = COLLECTED_DATA["results"];
+                console.log(ptest);
+                
+                var color = new Object();
+                
+                color.red = "#CC0000";
+                color.red2 = "#FF850A";
+                
+                color.blue = "#1A1AFF";
+                color.blue2 = "#6699CC";
+                
+                color.green = "#006600";
+                color.green2 = "#33FF33";
+                
+                color.purple = "#800080";
+                color.purple2 = "#FF33FF";
+                
+                color.black = "#000000";
+                
+                color.background = "#85AB8F";
+                
+                var limits = new Object();
+                
+                limits["BYGNINGT"] = { xaxis : { min : 0, max : 1500, 
+                                                 ticks : createTicks([200, 600, 1000, 1400], "features")}, 
+                                       yaxis : { min : 0, max : 35000, 
+                                                 ticks : createTicks([5000, 10000, 15000, 20000, 25000, 30000], "")} 
+                                    };
+                limits["VEGTABLE"] = { xaxis : { min : 0, max : 600, 
+                                                 ticks : createTicks([100, 300, 500], "features")}, 
+                                       yaxis : { min : 0, max : 50000, 
+                                                 ticks : createTicks([5000, 15000, 25000, 35000, 45000], "")} 
+                                    };
+                
+                
+                
+                var latencies = ptest.extractResultsCoordinatesFeatures();
+                for(var table_name in {"BYGNINGT" : null, "VEGTABLE" : null})
+                {
+                
+                var FORMAT_BINARY_1B_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES"], 11, 10).filtered;
+                var FORMAT_BINARY_1B_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"], 11, 10).filtered;
+                var FORMAT_BINARY_2B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND"], 11, 10).filtered;
+                var FORMAT_BINARY_2B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND_SIMPLE"], 11, 10).filtered;
+                var FORMAT_BINARY_8B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND"], 11, 10).filtered;
+                var FORMAT_BINARY_8B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND_SIMPLE"], 11, 10).filtered;
+                var FORMAT_GJ_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES"], 11, 10).filtered;
+                var FORMAT_GJ_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES_SIMPLE"], 11, 10).filtered;
+                
+                
+                
+                $("#charts").append('<p>FEATURES_COORDINATES_'+table_name+'</p><div id="FEATURES_COORDINATES_'+table_name+'" style="width:530px; margin-left: 5%; margin-right: 5%; margin-top: 2em; height: 850px;">');
+                
+                $.plot($("#FEATURES_COORDINATES_"+table_name),
+                [  {  data : swapArray(FORMAT_BINARY_1B_CACHED_TILES), label : "FORMAT_BINARY_1B_CACHED_TILES", color : color.red, lines : {show : true} }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES"},  
+                   
+                   { data : swapArray(FORMAT_BINARY_1B_CACHED_TILES_SIMPLE), label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE", color : color.red, dashes : {show:true} }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES_SIMPLE_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"},   
+                   
+                   { data : swapArray(FORMAT_BINARY_2B_ONDEMAND), label : "FORMAT_BINARY_2B_ONDEMAND", color : color.blue, lines : {show : true} }, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND"},   
+                   
+                   { data : swapArray(FORMAT_BINARY_2B_ONDEMAND_SIMPLE), label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE", color : color.blue, dashes : {show:true} }, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND_SIMPLE_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : swapArray(FORMAT_BINARY_8B_ONDEMAND), label : "FORMAT_BINARY_8B_ONDEMAND", color : color.green, lines : {show : true} }, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND"},   
+                   
+                   { data : swapArray(FORMAT_BINARY_8B_ONDEMAND_SIMPLE), label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE", color : color.green, dashes : {show:true} }, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND_SIMPLE_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : swapArray(FORMAT_GJ_CACHED_TILES), label : "FORMAT_GJ_CACHED_TILES", color : color.purple, lines : {show : true} }, 
+                   //{ data : FORMAT_GJ_CACHED_TILES_with_tolerance, label : "FORMAT_GJ_CACHED_TILES"}, 
+                   
+                   //{ data : swapArray(FORMAT_GJ_CACHED_TILES_SIMPLE), label : "FORMAT_GJ_CACHED_TILES_SIMPLE", color : color.purple2}, 
+                   //{ data : FORMAT_GJ_CACHED_TILES_SIMPLE_with_tolerance, label : "FORMAT_GJ_CACHED_TILES_SIMPLE"}, 
+                ],
+                
+                {
+                    series : {points : {show : true}},
+                    
+                    yaxis : limits[table_name]["yaxis"],
+                    xaxis : limits[table_name]["xaxis"],
+
+                    legend : {position:"nw"},
+                    
+                });
+                
+                }
+                
+                
+                limits = new Object();
+                
+                limits["BYGNINGT"] = { 
+                                    xaxis : { min : 0, max : 2000, 
+                                                ticks : createTicks([500, 1000, 1500], "features")}, 
+                                    yaxis : { min : 0, max : 300, 
+                                                ticks : createTicks([10, 25, 50, 100, 200, 300], "kB")} 
+                                    };
+                limits["VEGTABLE"] = { xaxis : { min : 0, max : 600, 
+                                                 ticks : createTicks([100, 300, 500], "features")}, 
+                                       yaxis : { min : 0, max : 300, 
+                                                 ticks : createTicks([10, 25, 50, 100, 200, 300], "kB")} 
+                                    };
+                
+                
+                latencies = ptest.extractResultsKBFeatures();
+                for(var table_name in {"BYGNINGT" : null, "VEGTABLE" : null})
+                {
+                
+                var FORMAT_BINARY_1B_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES"], 11, 10).filtered;
+                var FORMAT_BINARY_1B_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"], 11, 10).filtered;
+                var FORMAT_BINARY_2B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND"], 11, 10).filtered;
+                var FORMAT_BINARY_2B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_2B_ONDEMAND_SIMPLE"], 11, 10).filtered;
+                var FORMAT_BINARY_8B_ONDEMAND = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND"], 11, 10).filtered;
+                var FORMAT_BINARY_8B_ONDEMAND_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_BINARY_8B_ONDEMAND_SIMPLE"], 11, 10).filtered;
+                var FORMAT_GJ_CACHED_TILES = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES"], 11, 10).filtered;
+                var FORMAT_GJ_CACHED_TILES_SIMPLE = getFilteredArray(latencies[table_name]["FORMAT_GJ_CACHED_TILES_SIMPLE"], 11, 10).filtered;
+                
+                
+                
+                $("#charts").append('<p>FEATURES_KB_'+table_name+'</p><div id="FEATURES_KB_'+table_name+'" style="width:540px; margin-left: 5%; margin-right: 5%; margin-top: 2em; height: 850px;">');
+                
+                $.plot($("#FEATURES_KB_"+table_name),
+                [  {  data : swapArray(FORMAT_BINARY_1B_CACHED_TILES), label : "FORMAT_BINARY_1B_CACHED_TILES", color : color.red, lines : {show : true} }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES"},  
+                   
+                   { data : swapArray(FORMAT_BINARY_1B_CACHED_TILES_SIMPLE), label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE", color : color.red, dashes : {show:true} }, 
+                   //{ data : FORMAT_BINARY_1B_CACHED_TILES_SIMPLE_with_tolerance, label : "FORMAT_BINARY_1B_CACHED_TILES_SIMPLE"},   
+                   
+                   { data : swapArray(FORMAT_BINARY_2B_ONDEMAND), label : "FORMAT_BINARY_2B_ONDEMAND", color : color.blue, lines : {show : true} }, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND"},   
+                   
+                   { data : swapArray(FORMAT_BINARY_2B_ONDEMAND_SIMPLE), label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE", color : color.blue, dashes : {show:true} }, 
+                   //{ data : FORMAT_BINARY_2B_ONDEMAND_SIMPLE_with_tolerance, label : "FORMAT_BINARY_2B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : swapArray(FORMAT_BINARY_8B_ONDEMAND), label : "FORMAT_BINARY_8B_ONDEMAND", color : color.green, lines : {show : true} }, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND"},   
+                   
+                   { data : swapArray(FORMAT_BINARY_8B_ONDEMAND_SIMPLE), label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE", color : color.green, dashes : {show:true} }, 
+                   //{ data : FORMAT_BINARY_8B_ONDEMAND_SIMPLE_with_tolerance, label : "FORMAT_BINARY_8B_ONDEMAND_SIMPLE"},   
+                   
+                   { data : swapArray(FORMAT_GJ_CACHED_TILES), label : "FORMAT_GJ_CACHED_TILES", color : color.purple, lines : {show : true} }, 
+                   //{ data : FORMAT_GJ_CACHED_TILES_with_tolerance, label : "FORMAT_GJ_CACHED_TILES"}, 
+                   
+                   { data : swapArray(FORMAT_GJ_CACHED_TILES_SIMPLE), label : "FORMAT_GJ_CACHED_TILES_SIMPLE", color : color.purple, dashes : {show:true} }, 
+                   //{ data : FORMAT_GJ_CACHED_TILES_SIMPLE_with_tolerance, label : "FORMAT_GJ_CACHED_TILES_SIMPLE"}, 
+                ],
+                
+                {
+                    series : {points : {show : true}},
+                    
+                    yaxis : limits[table_name]["yaxis"],
+                    xaxis : limits[table_name]["xaxis"],
+
+                    legend : {position:"nw"},
+                });
+                
+                }
+                
+                /*
+                 * Result object
+                 * 
+                 * Constructs an object based on the raw data, removes the "spikes", 
+                 * and calculates mean value and standard deviation
+                 */
+                function Result(data){
+                    this.raw_data = data,
+                    
+                    this.data = [];
+                    for(var i=0;i<data.length;i++)
+                    {
+                        if(data[i]<350) { this.data.push(data[i]); }
+                    }
+                    
+                    this.mean = 0.0;
+                    for(var i=0;i<this.data.length;i++)
+                    {
+                        this.mean += this.data[i];
+                    }
+                    this.mean /= this.data.length;
+                    
+                    var std_dev_square_sum = 0.0;
+                    for(var i=0;i<this.data.length;i++)
+                    {
+                        std_dev_square_sum += Math.pow((this.data[i]-this.mean),2);
+                    }
+                    this.std_dev = Math.sqrt(std_dev_square_sum/this.data.length);
+                }
+                
+                /*
+                 * PlotResult object
+                 * 
+                 * Constructs an object based on a Result object, creates normal distribution and labels
+                 */
+                function PlotResult(Result)
+                {
+                    this.normal_distribution = [];
+                    
+                    this._getNStdDev = function(mean,stdev,n) {return (mean+(n*stdev));}
+                    
+                    this.ticks = [];
+                    for(var n=-3;n<=3;n++)
+                    {
+                        var str;
+                        if(n<-1) str=n+"\u03C3";
+                        else if(n>1) str="\+"+n+"\u03C3";
+                        else if(n==0) str="0";
+                        else str="\u03C3";
+                        
+                        if(n>0){
+                        str += " (+" + (n*Result.std_dev).toPrecision(2) + " ms)";
+                        }
+                        else if(n<0){
+                        str += " (" + (n*Result.std_dev).toPrecision(2) + " ms)";
+                        }
+                        else
+                        {
+                            str += " (" + Result.mean.toPrecision(5) + " ms)";
+                        }
+                        
+                        this.ticks.push([ this._getNStdDev(Result.mean,Result.std_dev,n), str  ])
+                    }
+                    
+                    
+                    // Gaussian function
+                    function calcNormalDistr(x,mean,stdev)
+                    {
+                        var exp = Math.pow(Math.E,-((Math.pow(x-mean,2))/(2*Math.pow(stdev,2))));
+                        
+                        var f = (1.0/(Math.sqrt(2*Math.PI*Math.pow(stdev,2))));
+                        
+                        return f*exp;
+                    }
+                    
+                    
+                    for(var i = 75; i<190; i++) {
+                        this.normal_distribution.push([i,calcNormalDistr(i, Result.mean, Result.std_dev)]);
+                    }
+                    
+                }
+                
+                /*
+                // Plot results for Chromium on Linux
+                
+                var chromelinux = new Result([133, 134, 132, 131, 132, 131, 163, 132, 131, 132, 132, 132, 131, 131, 132, 132, 131, 132, 144, 132, 132, 131, 131, 131, 131, 132, 131, 131, 131, 132, 132, 132, 131, 132, 131, 133, 132, 132, 132, 132, 4989, 4559, 4106, 2171, 132, 132, 132, 132, 132, 131, 132, 131, 132, 131, 132, 132, 131, 132, 131, 131, 132, 132, 131, 132, 134, 132, 133, 131, 132, 131, 131, 132, 131, 131, 132, 132, 131, 132, 132, 131, 133, 131, 133, 132, 131, 131, 131, 131, 131, 132, 133, 132, 134, 131, 131, 131, 131, 131, 131, 131, 132, 132, 131, 132, 132, 131, 132, 131, 132, 132, 132, 133, 131, 132, 131, 131, 132, 131, 132, 131, 132, 131, 131, 133, 131, 131, 131, 131, 131, 131, 132, 132, 131, 132, 131, 131, 136, 132, 131, 131, 132, 132, 132, 131, 131, 131, 132, 131, 131, 131, 131, 131, 133, 131, 132, 131, 131, 131, 132, 132, 138, 131, 131, 131, 131, 132, 131, 132, 132, 131, 132, 131, 131, 132, 132, 131, 132, 132, 133, 131, 133, 131, 138, 133, 133, 133, 131, 131, 133, 132, 132, 131, 133, 132, 132, 132, 132, 131, 132, 132, 134, 131, 131, 132, 132, 132, 133, 133, 131, 132, 131, 131, 131, 134, 136, 132, 131, 131, 132, 131, 132, 131, 131, 131, 133, 132, 132, 132, 132, 132, 132, 132, 131, 131, 132, 131, 131, 131, 132, 131, 131, 132, 131, 131, 132, 132, 132, 132, 132, 136, 132, 132, 132, 151, 132, 132, 135, 132, 131, 131, 134, 130, 131, 133, 132, 132, 132, 132, 132, 132, 134, 132, 132, 131, 135, 132, 131, 132, 131, 134, 131, 136, 132, 132, 131, 132, 131, 132, 131, 131, 133, 131, 131, 132, 132, 132, 131, 132, 133, 132, 132, 134, 135, 132, 133, 135, 131, 131, 133, 134, 131, 134, 136, 134, 132, 132, 133, 132, 131, 132, 134, 132, 132, 133, 131, 135, 131, 132, 132, 131, 135, 132, 132, 132, 131, 132, 148, 132, 153, 131, 132, 132, 131, 131, 132, 131, 131, 133, 131, 131, 131, 132, 131, 131, 132, 132, 134, 130, 132, 131, 132, 132, 132, 132, 132, 137, 133, 132, 131, 132, 136, 133, 131, 132, 131, 133, 132, 131, 131, 132, 131, 134, 132, 131, 132, 130, 131, 131, 133, 136, 137, 131, 131, 131, 136, 132, 132, 131, 136, 130, 135, 133, 131, 132, 133, 137, 135, 131, 133, 131, 131, 134, 134, 135, 132, 134, 135, 132, 131, 132, 131, 131, 132, 134, 131, 131, 131, 131, 131, 131, 132, 132, 131, 132, 146, 135, 131, 131, 132, 131, 132, 132, 131, 133, 131, 131, 132, 172, 131, 132, 133, 131, 131, 133, 131, 135, 135, 133, 133, 132, 135, 131, 132, 182, 132, 131, 131, 133, 137, 136, 136, 132, 132, 133, 131, 131, 131, 137, 131, 132, 132, 134, 134, 131, 132, 135, 134, 131, 132, 132, 132, 133, 136, 136, 140, 141, 131, 131, 132, 132, 132, 132, 132, 131, 131, 132, 131, 131, 136, 134, 132, 132, 132, 132, 131, 132, 131, 132, 135, 131, 131, 132, 137, 131, 131, 132, 133, 134, 132, 133, 132, 132, 131, 226, 136, 135, 227, 143, 132, 131, 133, 133, 132, 132, 140, 132, 139, 134, 131, 227, 133, 132, 131, 216, 133, 131, 258, 135, 356, 453, 397, 386, 444, 441, 670, 730, 832, 804, 980, 980, 1038, 1130, 1174, 1354, 1613, 1581, 1885, 1886, 1654, 1358, 1170, 600, 271, 131, 330, 442, 515, 681, 691, 745, 1048, 1252, 1640, 1906, 2175, 2313, 2132, 2383, 2529, 2507, 2619, 2738, 2805, 3085, 3213, 3208, 2874, 2537, 2180, 1977, 1649, 1342, 1124, 768, 378, 132, 131, 131, 132, 137, 131, 133, 132, 132, 131, 131, 356, 736, 298, 132, 132, 132, 138, 131, 132, 135, 136, 132, 131, 138, 132, 139, 131, 132, 131, 131]);
+                
+                console.log("Chromium on Linux; mean: "+chromelinux.mean+" and standard deviation: "+chromelinux.std_dev);
+                console.log("data size (n) : "+chromelinux.data.length);
+                var Plot_chromelinux = new PlotResult(chromelinux);
+                
+                // create a plot with flot library
+                $.plot($("#chromelinux"), 
+                [ 
+                    { 
+                        data : Plot_chromelinux.normal_distribution, 
+                        label : "Web Sockets on Chrome (Ubuntu Linux)",
+                        bars : {show:true} 
+                    }
+                ],
+                {
+                    xaxis: 
+                    {
+                        ticks : Plot_chromelinux.ticks
+                    }
+                    
+                });
+                
+                // Plot results for Chrome on Windows
+                
+                var chromewindows = new Result([132, 135, 133, 132, 151, 134, 132, 132, 132, 132, 132, 132, 132, 132, 149, 134, 132, 133, 131, 132, 154, 133, 132, 132, 133, 132, 132, 133, 131, 131, 133, 137, 145, 132, 133, 133, 132, 135, 134, 132, 132, 132, 133, 132, 132, 132, 132, 132, 133, 132, 132, 169, 133, 132, 131, 133, 159, 132, 132, 132, 135, 136, 159, 132, 132, 131, 133, 132, 133, 132, 150, 133, 133, 133, 133, 132, 133, 133, 133, 132, 136, 133, 131, 132, 132, 135, 131, 132, 132, 132, 132, 132, 133, 132, 133, 132, 132, 132, 131, 131, 133, 132, 133, 132, 131, 132, 132, 132, 132, 132, 133, 132, 132, 132, 132, 133, 131, 132, 132, 133, 133, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 133, 133, 132, 132, 132, 132, 133, 132, 133, 133, 132, 133, 131, 134, 209, 132, 132, 133, 132, 132, 131, 132, 151, 133, 132, 133, 132, 132, 131, 132, 131, 132, 134, 132, 132, 132, 133, 132, 132, 132, 133, 132, 132, 132, 132, 132, 132, 132, 132, 134, 132, 133, 133, 135, 132, 131, 132, 132, 132, 131, 132, 131, 132, 132, 132, 133, 132, 131, 132, 132, 133, 132, 132, 134, 132, 131, 132, 132, 133, 132, 132, 134, 135, 216, 132, 131, 164, 305, 133, 131, 135, 132, 131, 132, 135, 134, 132, 132, 132, 132, 132, 132, 132, 132, 134, 132, 132, 132, 132, 132, 132, 131, 132, 132, 132, 132, 131, 132, 132, 133, 132, 131, 133, 132, 131, 131, 132, 132, 132, 131, 132, 133, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 133, 132, 132, 131, 149, 132, 131, 132, 132, 131, 132, 132, 131, 131, 135, 131, 132, 135, 133, 134, 132, 132, 132, 131, 132, 131, 131, 132, 131, 133, 133, 132, 131, 133, 132, 133, 131, 132, 134, 132, 132, 131, 132, 222, 135, 134, 130, 133, 132, 133, 132, 131, 132, 132, 132, 131, 131, 131, 132, 132, 131, 131, 132, 135, 132, 132, 132, 132, 132, 131, 132, 131, 131, 170, 132, 132, 134, 131, 134, 134, 136, 135, 136, 132, 133, 134, 133, 132, 131, 131, 132, 131, 136, 131, 132, 131, 131, 133, 135, 132, 132, 132, 132, 134, 135, 131, 132, 132, 131, 131, 132, 5082, 4544, 4120, 133, 132, 131, 132, 132, 135, 135, 133, 132, 132, 135, 131, 131, 132, 131, 132, 133, 131, 133, 132, 132, 132, 132, 132, 131, 132, 133, 132, 132, 135, 131, 133, 132, 132, 131, 132, 133, 131, 131, 134, 132, 132, 132, 131, 131, 132, 133, 131, 132, 132, 132, 132, 132, 132, 132, 131, 133, 131, 132, 131, 131, 131, 131, 134, 132, 132, 132, 131, 132, 132, 131, 132, 131, 132, 131, 131, 131, 131, 135, 132, 136, 132, 131, 131, 132, 132, 131, 155, 168, 131, 131, 131, 131, 132, 131, 132, 132, 132, 132, 132, 133, 132, 132, 132, 133, 131, 132, 131, 131, 132, 132, 132, 132, 135, 132, 131, 132, 131, 131, 131, 132, 131, 132, 140, 131, 131, 132, 132, 130, 134, 133, 133, 133, 131, 132, 131, 131, 131, 130, 131, 131, 131, 131, 133, 131, 169, 131, 131, 131, 131, 133, 132, 132, 134, 133, 134, 131, 131, 134, 131, 132, 134, 132, 131, 131, 132, 134, 131, 132, 131, 181, 131, 141, 213, 132, 133, 131, 132, 132, 131, 131, 131, 132, 208, 196, 131, 133, 135, 132, 132, 195, 132, 132, 135, 132, 134, 131, 131, 132, 131, 134, 131, 134, 160, 187, 131, 133, 132, 132, 134, 131, 133, 138, 131, 148, 131, 133, 132, 131, 131, 133, 132, 131, 132, 132, 131, 227, 191, 175, 247, 141, 135, 131, 132, 132, 160, 132, 132, 184, 188, 131, 201, 150, 133, 131, 131, 134, 132, 134, 132, 131, 131, 131, 131, 131, 133, 131, 158, 135, 132, 132, 131, 182, 216, 295, 143, 164, 131, 131, 132, 131, 131, 131, 134, 146, 135, 192, 132, 131, 135, 131, 131, 134, 138, 144, 159, 131, 131, 156, 134, 224, 149, 131, 138, 132, 131, 131, 227, 132, 208, 132, 176, 131, 131, 131, 131, 218, 222, 224, 135, 131, 131, 145, 148, 147, 134, 135, 131, 131, 236, 228, 131, 132, 131, 131, 132, 133, 133, 131, 131, 132, 133, 134, 133, 133, 133, 132, 134, 132, 131, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 132, 131, 131, 131, 131, 131, 132, 132, 134, 132, 131, 131, 131, 132, 131, 131, 133, 132, 132, 132, 132, 132, 132, 132, 132, 132, 133, 132, 132, 132, 132, 133, 132, 133, 132, 132, 132, 132, 132, 132, 132, 133, 139, 132, 132, 132, 132, 133, 132, 133, 132, 132, 132, 132] );
+                
+                console.log("Chrome on Windows; mean: "+chromewindows.mean+" and standard deviation: "+chromewindows.std_dev);
+                console.log("data size (n) : "+chromewindows.data.length);
+                var Plot_chromewindows = new PlotResult(chromewindows);
+                
+                // create a plot with flot library
+                $.plot($("#chromewindows"), 
+                [ 
+                    { 
+                        data : Plot_chromewindows.normal_distribution,
+                        label : "Web Sockets on Chrome (Windows)",
+                        bars : {show:true} 
+                    }
+                ],
+                {
+                    xaxis: 
+                    {
+                        ticks : Plot_chromewindows.ticks
+                    }
+                    
+                });
+               */ 
+            });
+        </script>
+    </head>
+    <body>
+        <div id="charts" style="font-size: 18pt;"></div>
+        <!-- <div id="chromelinux" style="width:90%; margin-left: 5%; margin-right: 5%; height: 400px;"></div> -->
+        <!-- <div id="chromewindows" style="width:100%px; height: 400px;"></div> -->
+    </body>
+</html>

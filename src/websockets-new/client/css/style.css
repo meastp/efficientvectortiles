@@ -1,0 +1,43 @@
+svg {
+  background: #fff;
+  border: 2px solid black;
+  margin: 20px;
+}
+
+#VEGTABLE.polygon path {
+  fill: #ff82c6;
+  stroke: #ff82c6;
+  stroke-width: 1px;
+}
+
+#VEGTABLE.polygon path:hover {
+  stroke: #000;
+  stroke: black;
+}
+
+#BYGNINGT.polygon path {
+  fill: #ff8200;
+}
+
+#BYGNINGT.polygon path:hover {
+  stroke: #000;
+  stroke: black;
+}
+
+
+#ANNENBYG.polygon path {
+  fill: #000;
+  stroke: #000;
+}
+
+#ANNENBYG.polygon path:hover {
+    fill: red;
+}
+
+#zoomin, #zoomout {
+    clear: both;
+    background: red;
+    margin: 5px;
+    float: left;
+    padding: 5px 10px;
+}

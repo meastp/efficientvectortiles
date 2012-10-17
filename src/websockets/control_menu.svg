@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.1 r9760"
+   sodipodi:docname="control_menu.svg">
+  <defs
+     id="defs4">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective2985" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="123.86851"
+     inkscape:cy="953.43094"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1245"
+     inkscape:window-height="909"
+     inkscape:window-x="262"
+     inkscape:window-y="41"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g3120">
+      <g
+         id="g3108">
+        <path
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1"
+           d="m 28.988243,21.643532 0,-18.7277305 17.170169,0 0,18.7277305 -8.585085,14.353531 z"
+           id="rect3781"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccccc" />
+        <path
+           style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3785"
+           d="m 36.947336,7.6944858 1.251991,0 5.467031,5.4670292 -1.669323,1.669322 -3.241267,-3.241266 0,23.252938 -2.364873,0 0,-23.252938 -3.241267,3.241266 -1.669323,-1.669322 5.467031,-5.4670292" />
+      </g>
+      <g
+         id="g3116">
+        <path
+           sodipodi:nodetypes="cccccc"
+           inkscape:connector-curvature="0"
+           id="path3796"
+           d="m 28.988243,53.141272 0,18.72773 17.170169,0 0,-18.72773 -8.585085,-14.353531 z"
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1" />
+        <path
+           style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
+           d="m 36.947336,67.090323 1.251991,0 5.467031,-5.467029 -1.669323,-1.669322 -3.241267,3.241266 0,-23.252938 -2.364873,0 0,23.252938 -3.241267,-3.241266 -1.669323,1.669322 5.467031,5.467029"
+           id="path3800"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccc" />
+      </g>
+      <g
+         id="g3104">
+        <path
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1"
+           d="m 53.299632,45.971635 18.72773,0 0,-17.170169 -18.72773,0 -14.353531,8.585085 z"
+           id="path3804"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccccc" />
+        <path
+           style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
+           sodipodi:nodetypes="ccccccccccc"
+           inkscape:connector-curvature="0"
+           id="path3808"
+           d="m 67.248683,38.012542 0,-1.251991 -5.467029,-5.467031 -1.669322,1.669323 3.241266,3.241267 -23.252938,0 0,2.364873 23.252938,0 -3.241266,3.241267 1.669322,1.669323 5.467029,-5.467031" />
+      </g>
+      <g
+         id="g3112">
+        <path
+           sodipodi:nodetypes="cccccc"
+           inkscape:connector-curvature="0"
+           id="path3812"
+           d="m 21.848752,45.971635 -18.7277305,0 0,-17.170169 18.7277305,0 14.353531,8.585085 z"
+           style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1" />
+        <path
+           style="font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
+           d="m 7.8997058,38.012542 0,-1.251991 5.4670292,-5.467031 1.669322,1.669323 -3.241266,3.241267 23.252938,0 0,2.364873 -23.252938,0 3.241266,3.241267 -1.669322,1.669323 -5.4670292,-5.467031"
+           id="path3816"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccc" />
+      </g>
+    </g>
+    <g
+       id="g3194">
+      <path
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1"
+         d="m 31.313497,91.88667 0,6.310867 12.519664,0 0,-6.310867 z"
+         id="path3831"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <path
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="path3849"
+         d="m 31.313497,103.7772 0,6.31087 12.519664,0 0,-6.31087 z"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1" />
+      <path
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1"
+         d="m 31.313497,115.66773 0,6.31087 12.519664,0 0,-6.31087 z"
+         id="path3855"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <path
+         sodipodi:nodetypes="ccccc"
+         inkscape:connector-curvature="0"
+         id="path3861"
+         d="m 31.313497,127.55826 0,6.31087 12.519664,0 0,-6.31087 z"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1" />
+      <path
+         style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1"
+         d="m 31.313497,139.44879 0,6.31087 12.519664,0 0,-6.31087 z"
+         id="path3867"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccc" />
+      <g
+         id="g3178">
+        <path
+           style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1"
+           d="m 28.988243,77.459023 0,8.655077 17.170169,0 0,-8.655077 z"
+           id="path3823"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccc" />
+        <g
+           style="font-size:11.39590549px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
+           id="text3883">
+          <path
+             d="m 34.963655,81.33072 2.153826,0 0,-2.347557 0.911672,0 0,2.347557 2.153826,0 0,0.900276 -2.153826,0 0,2.358953 -0.911672,0 0,-2.358953 -2.153826,0 0,-0.900276"
+             style=""
+             id="path3176" />
+        </g>
+      </g>
+      <g
+         id="g3189">
+        <path
+           sodipodi:nodetypes="ccccc"
+           inkscape:connector-curvature="0"
+           id="path3843"
+           d="m 28.98824,151.53223 0,8.65508 17.170169,0 0,-8.65508 z"
+           style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1" />
+        <g
+           style="font-size:11.39590549px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
+           id="text3887">
+          <path
+             d="m 36.165929,155.36406 2.814789,0 0,0.99145 -2.814789,0 0,-0.99145"
+             style=""
+             id="path3187" />
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

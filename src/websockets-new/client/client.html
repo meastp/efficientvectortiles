@@ -1,0 +1,534 @@
+<!doctype html>
+<html>
+<head>
+    <title>Web Sockets sample</title>
+    <meta charset="utf-8" />
+    
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="https://raw.github.com/mbostock/d3/master/d3.v2.min.js"></script>
+    
+    <!-- map style -->
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
+    
+    
+    <script type="text/javascript" src="performance-tests/collect_data.js"></script>
+    
+    <script type="text/javascript" src="js/map.js"></script>
+    <script type="text/javascript" src="js/tools.js"></script>
+    <script type="text/javascript" src="js/binary.data.js"></script>
+    <script type="text/javascript" src="js/text.data.js"></script>
+    <script type="text/javascript" src="js/data.formats.js"></script>
+    <script type="text/javascript">
+    
+    $(document).ready(function() {
+        
+        //
+        // client configuration
+        //
+        
+        // the server address and port
+        var websocket_uri = "ws://192.168.1.100:9090";
+        
+        // set the bounding window box, start position
+        var minx = 583300, maxx = 584000, miny = 6644300, maxy = 6645000;
+        //var minx = 583000, maxx = 583500, miny = 6644000, maxy = 6644500;
+        
+        //set current data format to use for transferring data between server and client
+        var CURRENT_DATA_FORMAT_TYPE = DataFormatType.FORMAT_BINARY_2B_ONDEMAND;
+        
+        //
+        // end of client configuration
+        //
+        
+        var EventType =
+        {
+            GET_LAYER : 1, // get a specific layer's data
+            GET_ALL_LAYERS : 2, // get all layers (short names) available, function create svg tags for all layers (perhaps in FeatureType)
+            SYNC_TIME : 3 // synchronise the server and client time for latency testing
+        }
+        
+        var proj = new Projection(minx, maxx, miny, maxy);
+        
+        var width = 1200, heigth = 650;
+        var nmap = new Map(proj, width, heigth);
+        
+        var ctrls = new Controls(nmap);
+        
+        var feature_list = new Array();
+        
+        // send data function
+        var sendData = function(EventType, DataFormatType, args)
+        {
+            var data;
+            
+            // preformat data, generate binary or text message
+            
+            if (DataFormatType["binary"] == true) 
+            {
+                var data_arr = Array();
+                
+                //console.log(typeof(EventType));
+                
+                if(typeof(EventType) !== 'undefined')
+                {
+                    data_arr = data_arr.concat( getTypeAsArray(EventType) );
+                }
+                
+                if(typeof(DataFormatType) != 'undefined')
+                {
+                    data_arr = data_arr.concat( getTypeAsArray(DataFormatType.value) );
+                }
+                
+                if(typeof(args) != 'undefined')
+                {
+                    for(var i=0;i<args.length;i++)
+                    {
+                        data_arr = data_arr.concat( new Uint8Array(args[i].buffer) );
+                    }
+                }
+                
+                var ts = getTimestampAsArray();
+                data_arr = data_arr.concat( new Uint8Array(ts.buffer) );
+                
+                //console.log(data);
+                
+                data = createArrayBuffer(data_arr);
+            }
+            else //(DataFormatType["binary"] == false)  
+            {
+                var text_data = new Object();
+                
+                //console.log(typeof(EventType));
+                
+                if(typeof(EventType) !== 'undefined')
+                {
+                    text_data.EventType = EventType;
+                }
+                
+                if(typeof(DataFormatType) != 'undefined')
+                {
+                    text_data.DataFormatType = DataFormatType.value;
+                }
+                
+                text_data.MessageData = new Object();
+                
+                text_data.MessageData.requested = getTimestampAsTextFriendlyArray();
+                
+                if(typeof(args) != 'undefined')
+                {
+                    text_data.MessageData.data = args;
+                }
+                
+                //var ts = getTimestampAsArray();
+                //data_arr = data_arr.concat( new Uint8Array(ts.buffer) );
+                
+                //text_data.MessageData = text_data.MessageData.concat({ 'requested' : getTimestampAsTextFriendlyArray()});
+                
+                console.log("TextDATA");
+                console.log(text_data);
+                
+                data = JSON.stringify(text_data);
+            }
+            
+            websocket.send(data); // send data to server
+        }
+        
+        
+        var global_events = d3.dispatch("SyncTimeReceive", "UpdateMap"); // global events
+        
+        var global_timing = {
+            one_way_latency : null,
+            client_server_clock_difference : null
+        }
+        
+        
+        // Synchronize time.
+        var syncTimeReceive = function(rdata, is_binary)
+        {
+            
+            var timestamp_client_received = getTimestampAsArray();
+            //console.log(timestamp_client_received);
+            
+            console.log("SyncTimeReceive");
+            
+            //console.log(rdata);
+            
+            if(is_binary == true) //binary format
+            {
+                
+                var header = new Uint8Array(rdata, 0, 8);
+                
+                var timestamp_client_request = new Uint16Array(rdata, 8, 7);
+                //console.log(timestamp_client_request);
+                
+                var timestamp_server_received = new Uint16Array(rdata,  22, 7);
+                //console.log(timestamp_server_received);
+            }
+            
+            else //(is_binary == false) text format
+            {
+                
+                
+                var timestamp_client_request = rdata['requested'];
+                //console.log(timestamp_client_request);
+                
+                var timestamp_server_received = rdata['received'];
+                //console.log(timestamp_server_received);
+            }
+                
+                // need three timestamps -- one from server.
+                // received - sent = total time
+                // total time / 2 = latency each way
+                // server time should be sent + (total_time/2)
+                
+                var dt_client_request_receive = new Uint16Array(7);
+                    dt_client_request_receive[0] = Math.abs(timestamp_client_request[0]-timestamp_client_received[0]);
+                    dt_client_request_receive[1] = Math.abs(timestamp_client_request[1]-timestamp_client_received[1]);
+                    dt_client_request_receive[2] = Math.abs(timestamp_client_request[2]-timestamp_client_received[2]);
+                    dt_client_request_receive[3] = Math.abs(timestamp_client_request[3]-timestamp_client_received[3]);
+                    dt_client_request_receive[4] = Math.abs(timestamp_client_request[4]-timestamp_client_received[4]);
+                    dt_client_request_receive[5] = Math.abs(timestamp_client_request[5]-timestamp_client_received[5]);
+                    dt_client_request_receive[6] = Math.abs(timestamp_client_request[6]-timestamp_client_received[6]);
+                
+                var one_way_latency = new Array(7);
+                    one_way_latency[0] = dt_client_request_receive[0]/2.0;
+                    one_way_latency[1] = dt_client_request_receive[1]/2.0;
+                    one_way_latency[2] = dt_client_request_receive[2]/2.0;
+                    one_way_latency[3] = dt_client_request_receive[3]/2.0;
+                    one_way_latency[4] = dt_client_request_receive[4]/2.0;
+                    one_way_latency[5] = dt_client_request_receive[5]/2.0;
+                    one_way_latency[6] = dt_client_request_receive[6]/2.0;
+                //console.log(one_way_latency);
+                global_timing.one_way_latency = one_way_latency;
+                
+                var dt_client_server = new Array(7);
+                     dt_client_server[0] = (timestamp_server_received[0])-(timestamp_client_request[0]+one_way_latency[0]);
+                     dt_client_server[1] = (timestamp_server_received[1])-(timestamp_client_request[1]+one_way_latency[1]);
+                     dt_client_server[2] = (timestamp_server_received[2])-(timestamp_client_request[2]+one_way_latency[2]);
+                     dt_client_server[3] = (timestamp_server_received[3])-(timestamp_client_request[3]+one_way_latency[3]);
+                     dt_client_server[4] = (timestamp_server_received[4])-(timestamp_client_request[4]+one_way_latency[4]);
+                     dt_client_server[5] = (timestamp_server_received[5])-(timestamp_client_request[5]+one_way_latency[5]);
+                     dt_client_server[6] = (timestamp_server_received[6])-(timestamp_client_request[6]+one_way_latency[6]);
+                //console.log(dt_client_server);
+                global_timing.client_server_clock_difference = dt_client_server;
+            
+            
+            console.log(global_timing);
+            
+        }
+        global_events.on("SyncTimeReceive", syncTimeReceive); // connect event to syncTimeReceive function
+        
+        // update data and redraw map
+        var updateMap = function()
+        {
+            if(CURRENT_DATA_FORMAT_TYPE.binary == true)
+            {
+                for(var i=0;i<feature_list.length;i++)
+                {
+                    sendData(EventType.GET_LAYER, CURRENT_DATA_FORMAT_TYPE, [rawStringToBuffer(feature_list[i].name), nmap.projection.get_rawbbox()]); 
+                }
+            }
+            else
+            {
+                for(var i=0;i<feature_list.length;i++)
+                {
+                    sendData(EventType.GET_LAYER, CURRENT_DATA_FORMAT_TYPE, { 'name' : feature_list[i].name, 'bbox' : nmap.projection.get_textbbox() }); 
+                }
+            }
+            
+        }
+        global_events.on("UpdateMap", updateMap);// connect event
+        
+        //
+        // control functions
+        //
+        
+        var arrowup = function()
+        {
+            nmap.projection.bbox.y.min += 100;
+            nmap.projection.bbox.y.max += 100;
+            
+            global_events.UpdateMap();
+        }
+        
+        var arrowleft = function()
+        {
+                    nmap.projection.bbox.x.min -= 100;
+                    nmap.projection.bbox.x.max -= 100;
+            
+            global_events.UpdateMap();
+        }
+        var arrowright = function()
+        {
+                    nmap.projection.bbox.x.min += 100;
+                    nmap.projection.bbox.x.max += 100;
+            
+            global_events.UpdateMap();
+        }
+        var arrowdown = function()
+        {
+                    nmap.projection.bbox.y.min -= 100;
+                    nmap.projection.bbox.y.max -= 100;
+            
+            global_events.UpdateMap();
+        }
+        var minus = function()
+        {
+                    nmap.projection.bbox.x.min += 100;
+                    nmap.projection.bbox.x.max -= 100;
+                    nmap.projection.bbox.y.min += 100;
+                    nmap.projection.bbox.y.max -= 100;
+            
+            global_events.UpdateMap();
+        }
+        var plus = function()
+        {
+                    nmap.projection.bbox.x.min -= 100;
+                    nmap.projection.bbox.x.max += 100;
+                    nmap.projection.bbox.y.min -= 100;
+                    nmap.projection.bbox.y.max += 100;
+            
+            global_events.UpdateMap();
+        }
+        
+        ctrls.events.on("arrowright", arrowright);
+        ctrls.events.on("arrowup", arrowup);
+        ctrls.events.on("arrowdown", arrowdown);
+        ctrls.events.on("arrowleft", arrowleft);
+        ctrls.events.on("plus", plus);
+        ctrls.events.on("minus", minus);
+        
+        
+        var websocket = new WebSocket(websocket_uri); // connect to websocket server
+        
+        if(CURRENT_DATA_FORMAT_TYPE.binary == true) // set transfer method
+        {
+            websocket.binaryType = "arraybuffer";
+        }
+        else
+        {
+            //pass ( websocket.binaryType = "text"; )
+        }
+        
+        
+        websocket.onopen = function(evt) // when connection is first established
+        {
+            console.log("Connected to "+websocket_uri);
+            
+            //sync time
+            sendData(EventType.SYNC_TIME, CURRENT_DATA_FORMAT_TYPE);
+            
+            //get all tiles available for this data format
+            sendData(EventType.GET_ALL_LAYERS, CURRENT_DATA_FORMAT_TYPE);
+        }
+        
+        websocket.onclose = function(evt) { console.log("Disconnected from "+websocket_uri); }
+        websocket.onerror = function(evt) { console.log("Error from "+websocket_uri+" : "+evt.data); }
+        
+        websocket.onmessage = function(evt) // on message received from server
+        {
+            console.log("Message");
+            
+            //check if format is binary or text
+            if (CURRENT_DATA_FORMAT_TYPE.binary == true)
+            {
+                var etype_arr = new Uint8Array(evt.data, 0, 8); // check event type
+                var etype = etype_arr[0];
+                
+                switch( etype ){
+                    case EventType.GET_LAYER :
+                        console.log("GetLayer");
+                        
+                        var perf_details = {};
+                        
+                        var tsmp = new Date();
+                        
+                        //parse and render data
+                        switch(CURRENT_DATA_FORMAT_TYPE.value)
+                        {
+                            case DataFormatType.FORMAT_BINARY_1B_CACHED_TILES.value :
+                            case DataFormatType.FORMAT_BINARY_1B_CACHED_TILES_SIMPLE.value :
+                                perf_details = render_FORMAT_BINARY_1B_CACHED_TILES(evt.data, 80, nmap);
+                                break;
+                            case DataFormatType.FORMAT_BINARY_1B_TILES_ONDEMAND.value :
+                                perf_details = render_FORMAT_BINARY_1B_CACHED_TILES(evt.data, 80, nmap);
+                                break;
+                            case DataFormatType.FORMAT_BINARY_8B_ONDEMAND.value :
+                            case DataFormatType.FORMAT_BINARY_8B_ONDEMAND_SIMPLE.value :
+                                perf_details = render_FORMAT_BINARY_8B_ONDEMAND(evt.data, 80, nmap);
+                                break;
+                            case DataFormatType.FORMAT_BINARY_2B_ONDEMAND.value :
+                            case DataFormatType.FORMAT_BINARY_2B_ONDEMAND_SIMPLE.value :
+                                perf_details = render_FORMAT_BINARY_2B_ONDEMAND(evt.data, 80, nmap);
+                                break;
+                                
+                            default :
+                                console.log("Error: Unknown DataFormatType");
+                        }
+                        
+                        //
+                        //process result data : latency, data size etc.
+                        //
+                        
+                        var ts_client_started_processing = getTimestampAsArray(tsmp);
+                        
+                        var ts_client_finished_processing = getTimestampAsArray();
+                        
+                        var ts = new Uint16Array(evt.data, 8, 35);
+                        
+                        var ts_client_requested = ts.subarray(0,7);
+                        var rts_server_received = ts.subarray(7,14);
+                        var rts_server_started_query = ts.subarray(14,21);
+                        var rts_server_started_processing = ts.subarray(21,28);
+                        var rts_server_finished_processing = ts.subarray(28,35);
+                        
+                        //console.log([ts_client_requested, rts_server_received, rts_server_started_query, rts_server_started_processing, rts_server_finished_processing, ts_client_started_processing, ts_client_finished_processing]);
+                        
+                        var latency_ms = calculateTimestampToMilliseconds(global_timing.one_way_latency);
+                        var query_ms = calculateTimestampToMilliseconds(calculateAbsTimestamp(rts_server_started_query,rts_server_started_processing));
+                        var server_processing_ms = 
+                            calculateTimestampToMilliseconds(calculateAbsTimestamp(rts_server_started_processing,rts_server_finished_processing));
+                        var client_processing_ms = 
+                            calculateTimestampToMilliseconds(calculateAbsTimestamp(ts_client_started_processing,ts_client_finished_processing));
+                        
+                        perf_details["onewaylatency_time"] = latency_ms;
+                        perf_details["query_time"] = query_ms;
+                        perf_details["server_processing_time"] = server_processing_ms;
+                        perf_details["client_processing_time"] = client_processing_ms;
+                        
+                        console.log(perf_details);
+                        ptest.addResult(CURRENT_DATA_FORMAT_TYPE.name, perf_details); 
+                        jQuery('#dataout').text(JSON.stringify(ptest)); // data field used for the performance tests
+                        
+                        break;
+                    case EventType.GET_ALL_LAYERS :
+                        console.log("GetAllLayers");
+                        
+                        var data = new Uint8Array(evt.data); // parse layer names
+                        var nolayers = data[7];
+                        
+                        var layers = new Array(nolayers);
+                        
+                        //create layer svg groups
+                        for(var i=0;i<nolayers;i++)
+                        {
+                            layers[i] = new FeatureType(nmap, String.fromCharCode.apply(null, data.subarray(8+i*8,8+i*8+8)), "polygon");
+                            feature_list.push(layers[i]);
+                        }
+                        console.log(feature_list);
+                        break;
+                    case EventType.SYNC_TIME :
+                        global_events.SyncTimeReceive(evt.data, true);
+                        break;
+                    default:
+                        console.log("unknown Event Type");
+                }
+            }
+            
+            else // (CURRENT_DATA_FORMAT_TYPE.binary == false) text format
+            {
+                
+                var json_data = JSON.parse(evt.data); //parse json text
+                
+                var etype = json_data['EventType'];
+                
+                switch( etype ){
+                    case EventType.GET_LAYER :
+                        console.log("GetLayer");
+                        
+                        var data_size_arr = new Uint8Array(evt.data.length);
+                        
+                        // Matches only the 10.. bytes that are non-initial characters in a multi-byte sequence.
+                        var m = encodeURIComponent(evt.data).match(/%[89ABab]/g);
+                        var byte_size = evt.data.length + (m ? m.length : 0);
+                        // needed because of the utf8 encoding scheme
+                        
+                        var perf_details = {};
+                        
+                        var tsmp = new Date();
+                        
+                        //parse and render data
+                        switch(CURRENT_DATA_FORMAT_TYPE.value)
+                        {
+                            case DataFormatType.FORMAT_GJ_CACHED_TILES.value :
+                            case DataFormatType.FORMAT_GJ_CACHED_TILES_SIMPLE.value :
+                                perf_details = render_FORMAT_GJ_CACHED_TILES(json_data['data'], nmap, byte_size);
+                                break;
+                                
+                            default :
+                                console.log("Error: Unknown DataFormatType");
+                        }
+                        
+                        //
+                        // process result data : latency, data size etc.
+                        //
+                        
+                        var ts_client_started_processing = getTimestampAsArray(tsmp);
+                        
+                        var ts_client_finished_processing = getTimestampAsArray();
+                        
+                        
+                        
+                        var ts_client_requested = json_data['requested'];
+                        var rts_server_received = json_data['received'];
+                        var rts_server_started_query = json_data['started_query'];
+                        var rts_server_started_processing = json_data['started_processing'];
+                        var rts_server_finished_processing = json_data['finished_processing'];
+                        
+                        //console.log([ts_client_requested, rts_server_received, rts_server_started_query, rts_server_started_processing, rts_server_finished_processing, ts_client_started_processing, ts_client_finished_processing]);
+                        
+                        var latency_ms = calculateTimestampToMilliseconds(global_timing.one_way_latency);
+                        var query_ms = calculateTimestampToMilliseconds(calculateAbsTimestamp(rts_server_started_query,rts_server_started_processing));
+                        var server_processing_ms = 
+                            calculateTimestampToMilliseconds(calculateAbsTimestamp(rts_server_started_processing,rts_server_finished_processing));
+                        var client_processing_ms = 
+                            calculateTimestampToMilliseconds(calculateAbsTimestamp(ts_client_started_processing,ts_client_finished_processing));
+                        
+                        perf_details["onewaylatency_time"] = latency_ms;
+                        perf_details["query_time"] = query_ms;
+                        perf_details["server_processing_time"] = server_processing_ms;
+                        perf_details["client_processing_time"] = client_processing_ms;
+                        
+                        console.log(perf_details);
+                        jQuery('#dataout').text(JSON.stringify(ptest)); // data field used for the performance tests
+                        ptest.addResult(CURRENT_DATA_FORMAT_TYPE.name, perf_details);
+                        
+                        break;
+                    case EventType.GET_ALL_LAYERS :
+                        console.log("GetAllLayers");
+                        
+                        var layers = json_data['Layers'];
+                        
+                        // create svg groups for every layer
+                        for(var i=0;i<layers.length;i++)
+                        {
+                            var layer = new FeatureType(nmap, layers[i], "polygon");
+                            feature_list.push(layer);
+                        }
+                        console.log(feature_list);
+                        break;
+                    case EventType.SYNC_TIME :
+                        global_events.SyncTimeReceive(json_data, false);
+                        break;
+                    default:
+                        console.log("unknown Event Type");
+                }
+            }
+        }
+        
+        // data field used for the performance tests
+        
+        jQuery('#downloadify').append('<textarea id="dataout" rows="5" cols="50">');
+        jQuery('#downloadify').append('</textarea>');
+        
+        
+    });
+    </script>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="downloadify"></div>
+</body>
+
+</html>

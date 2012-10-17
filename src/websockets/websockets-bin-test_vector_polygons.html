@@ -1,0 +1,438 @@
+<!doctype html>
+<html>
+<head>
+    <title>Web Sockets sample</title>
+    <meta charset="utf-8" />
+
+    <script src="jquery.min.js"></script>
+    <script type="text/javascript" src="https://raw.github.com/mbostock/d3/master/d3.v2.min.js"></script>
+    <!-- Script that sends create marker commands through a web socket -->
+    
+    <style type="text/css">
+    
+svg {
+  background: #fff;
+  border: 2px solid black;
+  margin: 20px;
+}
+
+#veg .linestring {
+  fill: blue;
+  stroke: #000;
+  stroke-width: 1px;
+}
+
+#veg .polygon path {
+  stroke: #000;
+  stroke-width: 1px;
+}
+
+#veg .polygon path:hover {
+  fill: green;
+  stroke: red;
+}
+
+#zoomin, #zoomout {
+    clear: both;
+    background: red;
+    margin: 5px;
+    float: left;
+    padding: 5px 10px;
+}
+
+    </style>
+    
+    <script type="text/javascript">
+    
+    $(document).ready(function() {
+        
+        var minx = 583000,  maxx = 584000,
+            miny = 6644000, maxy = 6645000;
+        
+        var bounding_box = new Float64Array(4);
+        bounding_box[0] = minx;
+        bounding_box[1] = maxx;
+        bounding_box[2] = miny;
+        bounding_box[3] = maxy;
+        
+        
+        var width = 1200, heigth = 650;
+        
+        var compx = d3.scale.linear().domain([minx, maxx]).range([0, width]);
+        
+        var compy = d3.scale.linear().domain([miny, maxy]).range([heigth, 0]);
+        
+        var path = d3.svg.line()
+                            .x(function(d){return compx(d[0]);})
+                            .y(function(d){return compy(d[1]);});
+        
+        var polygon = function(d){return path(d) + "Z";}
+        
+        var svg = d3.select("#map").append("svg").attr("width", width).attr("height",heigth);
+        
+        var veg = svg.append("g").attr("id", "veg");
+        
+        var type_veg_linestring = veg.append("g").attr("class", "linestring");
+        var type_veg_polygon = veg.append("g").attr("class", "polygon");
+        
+        function draw_controls()
+        {
+            d3.select("#controls").remove();
+            var controls = svg.append("g").attr("id", "controls");
+            
+            var pan = controls.append("g");
+            
+            var arrowright = pan.append("g").attr("id", "arrowright").attr("class", "buttongroup");
+            arrowright.append("path").attr("class", "button").attr("d", "m 53.299632,45.971635 18.72773,0 0,-17.170169 -18.72773,0 -14.353531,8.585085 z")
+                                .attr("style", "fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1");
+            arrowright.append("path").attr("class", "arrow").attr("d", "m 67.248683,38.012542 0,-1.251991 -5.467029,-5.467031 -1.669322,1.669323 3.241266,3.241267 -23.252938,0 0,2.364873 23.252938,0 -3.241266,3.241267 1.669322,1.669323 5.467029,-5.467031")
+                                .attr("style", "font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu");
+            
+            var arrowdown = pan.append("g").attr("id", "arrowdown").attr("class", "buttongroup");
+            arrowdown.append("path").attr("class", "button").attr("d", "m 28.988243,53.141272 0,18.72773 17.170169,0 0,-18.72773 -8.585085,-14.353531 z")
+                                .attr("style", "fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1");
+            arrowdown.append("path").attr("class", "arrow").attr("d", "m 36.947336,67.090323 1.251991,0 5.467031,-5.467029 -1.669323,-1.669322 -3.241267,3.241266 0,-23.252938 -2.364873,0 0,23.252938 -3.241267,-3.241266 -1.669323,1.669322 5.467031,5.467029")
+                                .attr("style", "font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu");
+            
+            var arrowleft = pan.append("g").attr("id", "arrowleft").attr("class", "buttongroup");
+            arrowleft.append("path").attr("class", "button").attr("d", "m 21.848752,45.971635 -18.7277305,0 0,-17.170169 18.7277305,0 14.353531,8.585085 z")
+                                .attr("style", "fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1");
+            arrowleft.append("path").attr("class", "arrow").attr("d", "m 7.8997058,38.012542 0,-1.251991 5.4670292,-5.467031 1.669322,1.669323 -3.241266,3.241267 23.252938,0 0,2.364873 -23.252938,0 3.241266,3.241267 -1.669322,1.669323 -5.4670292,-5.467031")
+                                .attr("style", "font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu");
+            
+            var arrowup = pan.append("g").attr("id", "arrowup").attr("class", "buttongroup");
+            arrowup.append("path").attr("class", "button").attr("d", "m 28.988243,21.643532 0,-18.7277305 17.170169,0 0,18.7277305 -8.585085,14.353531 z")
+                                .attr("style", "fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1");
+            arrowup.append("path").attr("class", "arrow").attr("d", "m 36.947336,7.6944858 1.251991,0 5.467031,5.4670292 -1.669323,1.669322 -3.241267,-3.241266 0,23.252938 -2.364873,0 0,-23.252938 -3.241267,3.241266 -1.669323,-1.669322 5.467031,-5.4670292")
+                                .attr("style", "font-size:20px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu");
+            
+            
+            pan.selectAll("g").filter(".buttongroup")
+                .on("mouseover", function(g, i)
+                    {
+                        d3.select(this).selectAll("path").filter(".button").style("fill", "rgb(100, 100, 100)");
+                        d3.select(this).selectAll("path").filter(".arrow").style("fill", "rgb(100, 100, 100)");
+                    })
+                .on("mouseout", function(g, i)
+                    {
+                        d3.select(this).selectAll("path").filter(".button").style("fill", "rgb(255, 255, 255)");
+                        d3.select(this).selectAll("path").filter(".arrow").style("fill", "rgb(0, 0, 0)");
+                    });
+            
+            arrowup.on("click", function(g, i)
+                {
+                    //minx = 100;
+                    //maxx = 100;
+                    miny += 100;
+                    maxy += 100;        
+                    
+                    bounding_box[0] = minx;
+                    bounding_box[1] = maxx;
+                    bounding_box[2] = miny;
+                    bounding_box[3] = maxy;
+                    
+                    websocket.send(bounding_box.buffer);
+                });
+            arrowleft.on("click", function(g, i)
+                {
+                    minx -= 100;
+                    maxx -= 100;
+                    //miny = 100;
+                    //maxy = 100;        
+                    
+                    bounding_box[0] = minx;
+                    bounding_box[1] = maxx;
+                    bounding_box[2] = miny;
+                    bounding_box[3] = maxy;
+                    
+                    websocket.send(bounding_box.buffer);
+                });
+            arrowright.on("click", function(g, i)
+                {
+                    minx += 100;
+                    maxx += 100;
+                    //miny = 100;
+                    //maxy = 100;        
+                    
+                    bounding_box[0] = minx;
+                    bounding_box[1] = maxx;
+                    bounding_box[2] = miny;
+                    bounding_box[3] = maxy;
+                    
+                    websocket.send(bounding_box.buffer);
+                });
+            arrowdown.on("click", function(g, i)
+                {
+                    //minx = 100;
+                    //maxx = 100;
+                    miny -= 100;
+                    maxy -= 100;        
+                    
+                    bounding_box[0] = minx;
+                    bounding_box[1] = maxx;
+                    bounding_box[2] = miny;
+                    bounding_box[3] = maxy;
+                    
+                    websocket.send(bounding_box.buffer);
+                });
+            
+            
+            var zoom = controls.append("g");
+            
+            var plus = zoom.append("g").attr("id", "plus").attr("class", "buttongroup");
+            plus.append("path").attr("class", "button").attr("d", "m 28.98824,151.53223 0,8.65508 17.170169,0 0,-8.65508 z")
+                                .attr("style", "fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1");
+            plus.append("path").attr("class", "symbol").attr("d", "m 36.165929,155.36406 2.814789,0 0,0.99145 -2.814789,0 0,-0.99145")
+                                .attr("style", "font-size:11.39590549px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu");
+            
+            var zoom5 = zoom.append("g").attr("id", "zoom5").attr("class", "buttongroup");
+            zoom5.append("path").attr("class", "button").attr("d", "m 31.313497,139.44879 0,6.31087 12.519664,0 0,-6.31087 z")
+                                .attr("style", "fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1");
+            
+            var zoom4 = zoom.append("g").attr("id", "zoom4").attr("class", "buttongroup");
+            zoom4.append("path").attr("class", "button").attr("d", "m 31.313497,127.55826 0,6.31087 12.519664,0 0,-6.31087 z")
+                                .attr("style", "fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1");
+            
+            var zoom3 = zoom.append("g").attr("id", "zoom3").attr("class", "buttongroup");
+            zoom3.append("path").attr("class", "button").attr("d", "m 31.313497,115.66773 0,6.31087 12.519664,0 0,-6.31087 z")
+                                .attr("style", "fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1");
+            
+            var zoom2 = zoom.append("g").attr("id", "zoom2").attr("class", "buttongroup");
+            zoom2.append("path").attr("class", "button").attr("d", "m 31.313497,103.7772 0,6.31087 12.519664,0 0,-6.31087 z")
+                                .attr("style", "fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1");
+            
+            var zoom1 = zoom.append("g").attr("id", "zoom1").attr("class", "buttongroup");
+            zoom1.append("path").attr("class", "button").attr("d", "m 31.313497,91.88667 0,6.310867 12.519664,0 0,-6.310867 z")
+                                .attr("style", "fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.03866839;stroke-opacity:1");
+            
+            var minus = zoom.append("g").attr("id", "minus").attr("class", "buttongroup");
+            minus.append("path").attr("class", "button").attr("d", "m 28.988243,77.459023 0,8.655077 17.170169,0 0,-8.655077 z")
+                                .attr("style", "fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.42448819;stroke-opacity:1");
+            minus.append("path").attr("class", "symbol").attr("d", "m 34.963655,81.33072 2.153826,0 0,-2.347557 0.911672,0 0,2.347557 2.153826,0 0,0.900276 -2.153826,0 0,2.358953 -0.911672,0 0,-2.358953 -2.153826,0 0,-0.900276")
+                                .attr("style", "font-size:11.39590549px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Ubuntu;-inkscape-font-specification:Ubuntu");
+            
+            
+            minus.on("click", function(g, i)
+                {
+                    minx += 100;
+                    maxx -= 100;
+                    miny += 100;
+                    maxy -= 100;        
+                    
+                    bounding_box[0] = minx;
+                    bounding_box[1] = maxx;
+                    bounding_box[2] = miny;
+                    bounding_box[3] = maxy;
+                    
+                    websocket.send(bounding_box.buffer);
+                });
+            plus.on("click", function(g, i)
+                {
+                    minx -= 100;
+                    maxx += 100;
+                    miny -= 100;
+                    maxy += 100;        
+                    
+                    bounding_box[0] = minx;
+                    bounding_box[1] = maxx;
+                    bounding_box[2] = miny;
+                    bounding_box[3] = maxy;
+                    
+                    websocket.send(bounding_box.buffer);
+                });
+        }
+        
+        draw_controls();
+        
+        var websocket_testserver_uri = "ws://localhost:9090";
+        
+        var websocket = new WebSocket(websocket_testserver_uri);
+        websocket.binaryType = "arraybuffer";
+        
+        websocket.onopen = function(evt) { console.log("Connected to "+websocket_testserver_uri); }
+        websocket.onclose = function(evt) { console.log("Disconnected from "+websocket_testserver_uri); }
+        websocket.onerror = function(evt) { console.log("Error from "+websocket_testserver_uri+" : "+evt.data); }
+        
+        websocket.onmessage = function(evt)
+        {
+            console.log(evt);
+            
+            var raw_data = evt.data;
+            
+            var layer = "veg";
+            
+            var header = new Uint32Array(raw_data,0,4);
+            var size = header[0];
+            //console.log(header);
+            
+            var header_offset = header.byteOffset,
+                header_byte_size = header.byteLength/header.length,
+                header_length = header.length;
+            
+            var tile_header_offset = header_byte_size*header_length,
+                tile_header_byte_size = 8,
+                tile_header_length = 3*size;
+            
+            var tile_header = new Float64Array(raw_data, header.byteOffset+header.byteLength, tile_header_length);
+            console.log(tile_header);
+            
+            var geometry_header_coords_offset = tile_header_offset+(tile_header_byte_size*tile_header_length),
+                geometry_header_coords_byte_size = 2,
+                geometry_header_coords_length = d3.sum(tile_header, function(obj){ 
+                                                                    if (obj < 1000) 
+                                                                     { return obj; } 
+                                                                    else { return null; }
+                                                                    } 
+                                                                );
+            
+            var geometry_header_coords = new Uint16Array(raw_data, tile_header.byteOffset+tile_header.byteLength, geometry_header_coords_length);
+            console.log(geometry_header_coords);
+            
+            
+            var geometry_header_type_offset = geometry_header_coords_offset+(geometry_header_coords_byte_size*geometry_header_coords_length),
+                geometry_header_type_byte_size = 1,
+                geometry_header_type_length = geometry_header_coords_length;
+            
+            var geometry_header_type = new Uint8Array(raw_data, geometry_header_type_offset, geometry_header_type_length);
+            console.log(geometry_header_type);
+            
+            
+            
+            
+            var data = new Uint8Array(raw_data,geometry_header_type_offset+(geometry_header_type_byte_size*geometry_header_type_length));
+            console.log(data)
+            
+            var object_data = { lines : [], polygons : [] };
+            
+            var tile_offset=0;
+            var data_offset=0;
+            for(var i=0;i<size;i++)
+            {
+                var tile_elements = tile_header[i*3];
+                var origox = tile_header[i*3+1];
+                var origoy = tile_header[i*3+2];
+                
+                //console.log(tile_elements); // number of geometries in the geometrycollection/tile
+                //console.log(origox);
+                //console.log(origoy);
+                
+                
+                var geometry_elements_coords = geometry_header_coords.subarray(tile_offset, tile_offset+tile_elements); // coordinates in the geometry
+                var geometry_elements_type = geometry_header_type.subarray(tile_offset, tile_offset+tile_elements);
+                
+                for(var j=0;j<geometry_elements_coords.length;j++)
+                {
+                    var object = new Array(geometry_elements_coords[j]);
+                    
+                    
+                    for(var k=0;k<geometry_elements_coords[j];k++)
+                    {
+                        object[k] = [ origox+data[data_offset], origoy+data[data_offset+1] ];
+                        data_offset += 2;
+                    }
+                    
+                    if (geometry_elements_type[j] == 1)
+                        object_data.lines.push(object);
+                    
+                    if (geometry_elements_type[j] == 2)
+                        object_data.polygons.push(object);
+                        
+                    //if geometry_elements_type[j] == 3 :
+                }
+                
+                
+                
+                tile_offset += tile_elements;
+            }
+            
+            
+            
+            
+            
+            //console.log(formatted_data);
+            
+            
+            //////
+            /*
+            formatted_data = new Array(size);
+            
+            
+            for(var i=0,offset = 0;i<size;i++)
+            {
+                
+                var nelements = sub_header[i*4];
+                
+                formatted_data[i] = new Array(nelements);
+                
+                for(var j=0; j<nelements;j++)
+                {
+                    formatted_data[i][j] = data.subarray(offset+j*2, (offset+j*2)+2);
+                }
+                
+                offset += nelements*2;
+                
+            }
+            */
+            //console.log(formatted_data)
+            
+            console.log("finished processing");
+            
+            
+        compx = d3.scale.linear().domain([minx, maxx]).range([0, width]);
+        
+        compy = d3.scale.linear().domain([miny, maxy]).range([heigth, 0]);
+            
+            
+            d3.selectAll("path").remove();
+            
+            /*
+            var flat_array = new Array();
+            for(var i = 0;i<formatted_data.length;i++)
+            {
+                for(var j=0;j<formatted_data[i].length;j++)
+                {
+                    flat_array.push(formatted_data[i][j]);
+                }
+            }
+            */      
+                    type_veg_linestring.selectAll("linestring")
+                      .data(object_data.lines)
+                      .enter().append("path")
+                      .attr("d", path);
+                      
+                    type_veg_polygon.selectAll("polygon")
+                      .data(object_data.polygons)
+                      .enter().append("path")
+                      .attr("d", polygon);
+            
+            draw_controls();
+            
+            console.log(object_data);
+            
+            
+            /*
+            type_veg_linestring.selectAll("path")
+                .on("mouseover", function(g, i){d3.select(this).style("stroke", "rgb(255, 0, 0)").style("stroke-width", "2px");})
+                .on("mouseout", function(g, i){d3.select(this).style("stroke", "rgb(0, 0, 0)").style("stroke-width", "1px");});
+            
+            type_veg_polygon.selectAll("path")
+                .on("mouseover", function(g, i){d3.select(this).style("fill", "rgb(255, 0, 0)");})
+                .on("mouseout", function(g, i){d3.select(this).style("fill", "rgb(0, 0, 0)");});
+            */
+            
+            console.log("finished visualizing");
+            
+            
+            
+            
+            console.log("Tiles: "+size+" Features: "+geometry_header_type.length+" Coordinates: "+data.length+" Size: "+(raw_data.byteLength)/1000.0+"KB");
+        }
+    });
+    </script>
+</head>
+
+<body>
+    <div id="map"></div>
+</body>
+
+</html>
